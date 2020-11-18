@@ -1,0 +1,19 @@
+>>> b[b['model']=='all']
+  model  bid  alpha_ff  beta_ff  alpha_fb  ...  w  gamma_ff  gamma_fb  gamma_fbint  xfb_init
+0   all  lbd         0        0         0  ...  0       NaN         0           -3        -2
+1   all  upb         1        1         1  ...  1       0.0         0            3         2
+
+[2 rows x 11 columns]
+>>> b[b['model']=='all'].drop('model')
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+  File "/Users/mq20185996/anaconda3/lib/python3.7/site-packages/pandas/core/frame.py", line 4102, in drop
+    errors=errors,
+  File "/Users/mq20185996/anaconda3/lib/python3.7/site-packages/pandas/core/generic.py", line 3914, in drop
+    obj = obj._drop_axis(labels, axis, level=level, errors=errors)
+  File "/Users/mq20185996/anaconda3/lib/python3.7/site-packages/pandas/core/generic.py", line 3946, in _drop_axis
+    new_axis = axis.drop(labels, errors=errors)
+  File "/Users/mq20185996/anaconda3/lib/python3.7/site-packages/pandas/core/indexes/base.py", line 5340, in drop
+    raise KeyError("{} not found in axis".format(labels[mask]))
+KeyError: "['model'] not found in axis"
+>>> b.loc[b['model']=='all'].drop('model')
