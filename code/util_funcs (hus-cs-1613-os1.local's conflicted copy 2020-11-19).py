@@ -3,66 +3,67 @@ from imports import *
 
 def define_models():
 
-    m = pd.DataFrame({
-        'name': 'all',
-        'credit': 'simple',
-        'n_params': 11,
-        'bid': ('lb', 'ub'),
-        'alpha_ff': (0, 1),
-        'beta_ff': (0, 1),
-        'alpha_fb': (0, 1),
-        'beta_fb': (0, 1),
-        'xfb_init': (-2, 2),
-        'gamma_ff_1': (0, 100),
-        'gamma_ff_2': (0, 100),
-        'gamma_ff_3': (0, 100),
-        'gamma_fbint_1': (0, 1),
-        'gamma_fbint_2': (0, 1),
-        'gamma_fbint_3': (0, 1)
-    })
-
     m1 = pd.DataFrame({
-        'name': 'all_simple',
-        'credit': 'simple',
-        'n_params': 11,
+        'name': 'all',
+        'n_params': 7,
         'bid': ('lb', 'ub'),
-        'alpha_ff': (0, 1),
+        'alpha_ff': (0, 2),
         'beta_ff': (0, 1),
         'alpha_fb': (0, 1),
         'beta_fb': (0, 1),
-        'xfb_init': (-2, 2),
-        'gamma_ff_1': (0, 100),
-        'gamma_ff_2': (0, 100),
-        'gamma_ff_3': (0, 100),
-        'gamma_fbint_1': (0, 1),
-        'gamma_fbint_2': (0, 1),
-        'gamma_fbint_3': (0, 1)
+        'w': (0, 1),
+        'gamma_ff': (0, 1),
+        'gamma_fb': (0, 0),
+        'gamma_fbint': (-3, 3),
+        'xfb_init': (-2, 2)
     })
 
     m2 = pd.DataFrame({
-        'name': 'all_smart',
-        'credit': 'smart',
-        'n_params': 13,
+        'name': 'only_ff',
+        'n_params': 6,
         'bid': ('lb', 'ub'),
-        'alpha_ff': (0, 1),
+        'alpha_ff': (0, 2),
         'beta_ff': (0, 1),
         'alpha_fb': (0, 1),
         'beta_fb': (0, 1),
-        'xfb_init': (-2, 2),
-        'gamma_fbint_1': (0, 1),
-        'gamma_fbint_2': (0, 1),
-        'gamma_fbint_3': (0, 1),
-        'gamma_fbint_4': (0, 1),
-        'gamma_ff_1': (-2, 2),
-        'gamma_ff_2': (-2, 2),
-        'gamma_ff_3': (-2, 2),
-        'gamma_ff_4': (-2, 2),
-        'alpha_ff2': (0, 1),
-        'beta_ff2': (0, 1),
+        'w': (0, 1),
+        'gamma_ff': (0, 1),
+        'gamma_fb': (0, 0),
+        'gamma_fbint': (0, 0),
+        'xfb_init': (-2, 2)
     })
 
-    # b = pd.concat((m1, m2))
-    b = m2
+    m3 = pd.DataFrame({
+        'name': 'only_fbint',
+        'n_params': 6,
+        'bid': ('lb', 'ub'),
+        'alpha_ff': (0, 2),
+        'beta_ff': (0, 1),
+        'alpha_fb': (0, 1),
+        'beta_fb': (0, 1),
+        'w': (0, 1),
+        'gamma_ff': (0, 0),
+        'gamma_fb': (0, 0),
+        'gamma_fbint': (-3, 3),
+        'xfb_init': (-2, 2)
+    })
+
+    m4 = pd.DataFrame({
+        'name': 'none',
+        'n_params': 2,
+        'bid': ('lb', 'ub'),
+        'alpha_ff': (0, 2),
+        'beta_ff': (0, 1),
+        'alpha_fb': (0, 1),
+        'beta_fb': (0, 1),
+        'w': (0, 1),
+        'gamma_ff': (0, 0),
+        'gamma_fb': (0, 0),
+        'gamma_fbint': (0, 0),
+        'xfb_init': (-2, 2)
+    })
+
+    b = pd.concat((m1, m2, m3, m4))
 
     return b
 
@@ -73,37 +74,34 @@ def fit_models(models, dd):
 
     for i, modname in enumerate(b['name'].unique()):
 
-        credit = b.loc[(b['name'] == modname), 'credit'][0]
-
         lb = b.loc[(b['name'] == modname) & (b['bid'] == 'lb')].drop(
-            ['name', 'bid', 'n_params', 'credit'], axis=1).to_numpy()[0]
+            ['name', 'bid'], axis=1).to_numpy()[0]
 
         ub = b.loc[(b['name'] == modname) & (b['bid'] == 'ub')].drop(
-            ['name', 'bid', 'n_params', 'credit'], axis=1).to_numpy()[0]
+            ['name', 'bid'], axis=1).to_numpy()[0]
 
         bb = tuple(zip(lb, ub))
 
-        # to improve your chances of finding a global minimum use higher
-        # popsize (default 15), with higher mutation (default 0.5) and
-        # (dithering), but lower recombination (default 0.7). this has the
-        # effect of widening the search radius, but slowing convergence.
+        # to improve your chances of finding a global minimum use higher popsize
+        # to_numpy() (default 15), with higher mutation (default 0.5) and (dithering),
+        # but lower recombination (default 0.7) to_numpy(). this has the effect of
+        # widening the search radius, but slowing convergence.
         fit_args = {
             'obj_func': obj_func,
             'bounds': bb,
-            'disp': True,
-            'maxiter': 3000,
+            'disp': False,
+            'maxiter': 1000,
             'popsize': 20,
             'mutation': 0.7,
             'recombination': 0.5,
-            'tol': 1e-3,
+            'tol': 1e-6,
             'polish': False,
             'updating': 'deferred',
-            'workers': 1
+            'workers': -1
         }
 
         froot = '../fits/fit_' + modname
-        fit_individual(credit, dd, fit_args, froot)
-        # fit_boot(credit, dd, fit_args, froot)
+        fit_individual(dd, fit_args, froot)
 
 
 def load_all_data():
@@ -130,6 +128,7 @@ def inspect_behaviour(d):
     for grp in d.group.unique():
         dd = d.loc[np.isin(d['group'].to_numpy(), grp)]
 
+        # note: mean over trials
         dd = dd.groupby(['group', 'phase', 'trial', 'sig_mp',
                          'sig_ep']).mean().reset_index()
 
@@ -143,63 +142,37 @@ def inspect_behaviour(d):
 
         fig, ax = plt.subplots(2, 2, squeeze=False)
 
-        # sns.scatterplot(data=dd, x='trial', y='ha_mid', ax=ax[0, 0])
-        # sns.scatterplot(data=dd, x='trial', y='ha_end', ax=ax[0, 0])
-
-        sns.violinplot(x='sig_mp',
-                       y='delta_ha_mid',
-                       hue='sig_ep',
-                       data=dd,
-                       ax=ax[0, 0])
+        sns.boxplot(x='sig_mp',
+                    y='delta_ha_mid',
+                    hue='sig_ep',
+                    data=dd,
+                    ax=ax[0, 0])
         ax[0, 0].set_xlabel('sig mp')
         ax[0, 0].set_ylabel('delta ha mid')
         ax[0, 0].set_title('ff adapt')
 
-        sns.violinplot(x='sig_mp',
-                       y='fb_int',
-                       hue='sig_ep',
-                       data=dd,
-                       ax=ax[0, 1])
+        sns.boxplot(x='sig_mp', y='fb_int', hue='sig_ep', data=dd, ax=ax[0, 1])
         ax[0, 1].set_xlabel('sig mp')
         ax[0, 1].set_ylabel('ep - mp')
         ax[0, 1].set_title('fb int')
 
-        if np.isin(grp, [13, 14]):
-            sns.scatterplot(x='error_mp',
-                            y='delta_ha_mid',
-                            style='sig_mp',
-                            hue='sig_ep',
-                            legend='full',
-                            data=dd,
-                            ax=ax[1, 0])
-
-            sns.scatterplot(x='error_mp',
-                            y='fb_int',
-                            style='sig_mp',
-                            hue='sig_ep',
-                            data=dd,
-                            ax=ax[1, 1])
-
-        else:
-            sns.scatterplot(x='error_mp',
-                            y='delta_ha_mid',
-                            style='sig_ep',
-                            hue='sig_mp',
-                            legend='full',
-                            data=dd,
-                            ax=ax[1, 0])
-
-            sns.scatterplot(x='error_mp',
-                            y='fb_int',
-                            style='sig_ep',
-                            hue='sig_mp',
-                            data=dd,
-                            ax=ax[1, 1])
-
+        sns.scatterplot(x='error_mp',
+                        y='delta_ha_mid',
+                        style='sig_mp',
+                        hue='sig_ep',
+                        legend='full',
+                        data=dd,
+                        ax=ax[1, 0])
         ax[1, 0].set_xlabel('error mp')
         ax[1, 0].set_ylabel('delta ha mid')
         ax[1, 0].set_title('ff adapt')
 
+        sns.scatterplot(x='error_mp',
+                        y='fb_int',
+                        style='sig_mp',
+                        hue='sig_ep',
+                        data=dd,
+                        ax=ax[1, 1])
         ax[1, 1].set_xlabel('error mp')
         ax[1, 1].set_ylabel('ep - mp')
         ax[1, 1].set_title('fb int')
@@ -208,44 +181,6 @@ def inspect_behaviour(d):
 
         plt.tight_layout()
         plt.show()
-
-
-def inspect_behaviour_2(models, d):
-
-    dfs = prepare_fit_summary(models, d)
-
-    for grp in d.group.unique():
-
-        print(grp)
-
-        d_grp = dfs.loc[np.isin(dfs['group'].to_numpy(), grp)]
-
-        for i in range(d_grp.shape[0]):
-
-            dd = d_grp.iloc[i]
-
-            yff = dd.yff
-            y = dd.y
-            x_obs_mp = dd.x_obs_mp
-            x_obs_ep = dd.x_obs_ep
-
-            fig, ax = plt.subplots(1, 2, squeeze=False, figsize=(10, 6))
-
-            t = np.arange(0, y.shape[0], 1)
-            ax[0, 0].plot(t, x_obs_mp, '-C0', label='observed')
-            ax[0, 0].plot(t, yff, '-C1', label='predicted')
-
-            ax[0, 1].plot(t, x_obs_ep, '-C0', label='observed')
-            ax[0, 1].plot(t, y, '-C1', label='predicted')
-
-            ax[0, 0].set_title('r-sq mp = ' + str(dd.r_squared_mp.round(2)))
-            ax[0, 1].set_title('r-sq ep = ' + str(dd.r_squared_ep.round(2)))
-
-            ax[0, 0].legend()
-            ax[0, 1].legend()
-
-            plt.tight_layout()
-            plt.show()
 
 
 def inspect_behaviour_all(d):
@@ -347,122 +282,6 @@ def inspect_fits_validate(d, froot):
         plt.savefig('../figures/fit_val_' + str(i) + '.pdf')
 
 
-def prepare_fit_summary_boot(models, d):
-
-    drec = {
-        'group': [],
-        'model': [],
-        'params': [],
-        'x_pred_ep': [],
-        'x_pred_mp': [],
-        'x_obs_ep': [],
-        'x_obs_mp': [],
-        'sig_mp': [],
-        'sig_ep': [],
-        'rot': [],
-        'y': [],
-        'yff': [],
-        'r_squared_ep': [],
-        'r_squared_mp': [],
-        'r_squared': [],
-        'bic': []
-    }
-
-    for g, grp in enumerate(d['group'].unique()):
-
-        d_grp = d[(d['group'] == grp)].groupby(['trial_abs']).mean()
-
-        for i, modname in enumerate(models['name'].unique()):
-
-            credit = models.loc[(models['name'] == modname), 'credit'][0]
-
-            x_obs_mp = d_grp['ha_init'].to_numpy()
-            # x_obs_mp = d_grp['ha_mid'].to_numpy()
-            x_obs_ep = d_grp['ha_end'].to_numpy()
-            rot = d_grp['rot'].to_numpy()
-            sig_mp = d_grp['sig_mp'].to_numpy().astype(np.int)
-            sig_ep = d_grp['sig_ep'].to_numpy().astype(np.int)
-            group = d_grp['group'].to_numpy()
-            args = (rot, sig_mp, sig_ep, group, credit)
-
-            fname = '../fits/fit_' + modname + '_group_' + str(
-                grp) + '_boot.txt'
-
-            p = np.loadtxt(fname, delimiter=',')
-            print(grp, p.shape)
-
-            fname = '../fits/fit_' + modname + '_group_' + str(
-                grp) + '_grp.txt'
-
-            p_grp = np.loadtxt(fname, delimiter=',')
-
-            (y, yff, yfb, xff, xfb) = simulate(p_grp[:-1], args)
-
-            # NOTE: must have programmed simulate to stop a trial early
-            y = y[:-1]
-            yff = yff[:-1]
-            yfb = yfb[:-1]
-            xff = xff[:-1]
-            xfb = xfb[:-1]
-            x_obs_mp = x_obs_mp[:-1]
-            x_obs_ep = x_obs_ep[:-1]
-
-            # fig, ax = plt.subplots(1, 3, squeeze=False)
-            # ax[0, 0].violinplot(p[:, 0:5])
-            # ax[0, 1].violinplot(p[:, 5:8])
-            # ax[0, 2].violinplot(p[:, 8:11])
-            # plt.show()
-
-            fig, ax = plt.subplots(2, 3, squeeze=False, figsize=(10, 10))
-            ax[0, 0].plot(x_obs_mp)
-            ax[0, 0].plot(yff)
-            ax[0, 1].plot(x_obs_ep)
-            ax[0, 1].plot(y)
-            ax[1, 0].violinplot(p[:, :5], np.arange(0, 5, 1))
-            ax[1, 1].violinplot(p[:, 5:8], np.arange(0, 3, 1))
-            ax[1, 2].violinplot(p[:, 8:-1], np.arange(0, 3, 1))
-            plt.title('group ' + str(grp) + ', model ' + modname)
-            plt.savefig('../figures/fit_summary_grp_' + str(grp) + '_mod_' +
-                        modname + '.pdf')
-            # plt.show()
-
-            ss_tot_mp = np.nansum((x_obs_mp - np.nanmean(x_obs_mp))**2)
-            ss_reg_mp = np.nansum((yff - np.nanmean(x_obs_mp))**2)
-            ss_res_mp = np.nansum((x_obs_mp - yff)**2)
-            ss_tot_ep = np.nansum((x_obs_ep - np.nanmean(x_obs_ep))**2)
-            ss_reg_ep = np.nansum((y - np.nanmean(x_obs_ep))**2)
-            ss_res_ep = np.nansum((x_obs_ep - y)**2)
-
-            r_squared_mp = 1 - (ss_res_mp) / (ss_tot_mp)
-            r_squared_ep = 1 - (ss_res_ep) / (ss_tot_ep)
-            r_squared = 1 - (ss_res_ep + ss_res_mp) / (ss_tot_ep + ss_tot_mp)
-
-            n = d_grp.shape[0]
-            k = models.loc[models['name'] == modname, 'n_params'].unique()[0]
-            bic = compute_bic(r_squared, n, k)
-
-            drec['group'].append(grp)
-            drec['model'].append(modname)
-            drec['params'].append(p_grp)
-            drec['x_pred_ep'].append(y)
-            drec['x_pred_mp'].append(yff)
-            drec['x_obs_ep'].append(x_obs_ep)
-            drec['x_obs_mp'].append(x_obs_mp)
-            drec['sig_mp'].append(sig_mp)
-            drec['sig_ep'].append(sig_ep)
-            drec['rot'].append(rot)
-            drec['y'].append(y)
-            drec['yff'].append(yff)
-            drec['r_squared_ep'].append(r_squared_ep)
-            drec['r_squared_mp'].append(r_squared_mp)
-            drec['r_squared'].append(r_squared)
-            drec['bic'].append(bic)
-
-    drec = pd.DataFrame(dict([(k, pd.Series(v)) for k, v in drec.items()]))
-
-    return drec
-
-
 def prepare_fit_summary(models, d):
 
     drec = {
@@ -470,8 +289,6 @@ def prepare_fit_summary(models, d):
         'subject': [],
         'model': [],
         'params': [],
-        'x_pred_ep': [],
-        'x_pred_mp': [],
         'x_obs_ep': [],
         'x_obs_mp': [],
         'sig_mp': [],
@@ -493,8 +310,6 @@ def prepare_fit_summary(models, d):
 
             for i, modname in enumerate(models['name'].unique()):
 
-                credit = models.loc[(models['name'] == modname), 'credit'][0]
-
                 dd = d[(d['group'] == grp) & (d['subject'] == sub)]
                 x_obs_mp = dd['ha_init'].to_numpy()
                 x_obs_ep = dd['ha_end'].to_numpy()
@@ -502,19 +317,12 @@ def prepare_fit_summary(models, d):
                 sig_mp = dd['sig_mp'].to_numpy()
                 sig_ep = dd['sig_ep'].to_numpy()
                 group = dd['group'].to_numpy()
-                args = (rot, sig_mp, sig_ep, group, credit)
+                args = (rot, sig_mp, sig_ep, group)
 
                 fname = '../fits/fit_' + modname + '_group_' + str(
                     grp) + '_sub_' + str(sub) + '.txt'
                 p = np.loadtxt(fname, delimiter=',')
                 (y, yff, yfb, xff, xfb) = simulate(p[:-1], args)
-
-                x_obs_mp = x_obs_mp[:-1]
-                x_obs_ep = x_obs_ep[:-1]
-                yff = yff[:-1]
-                y = y[:-1]
-                sig_mp = sig_mp[:-1]
-                sig_ep = sig_ep[:-1]
 
                 ss_tot_mp = np.nansum((x_obs_mp - np.nanmean(x_obs_mp))**2)
                 ss_reg_mp = np.nansum((yff - np.nanmean(x_obs_mp))**2)
@@ -523,22 +331,20 @@ def prepare_fit_summary(models, d):
                 ss_reg_ep = np.nansum((y - np.nanmean(x_obs_ep))**2)
                 ss_res_ep = np.nansum((x_obs_ep - y)**2)
 
-                r_squared_mp = 1 - ss_res_mp / ss_tot_mp
-                r_squared_ep = 1 - ss_res_ep / ss_tot_ep
+                r_squared_mp = 1 - (ss_res_mp) / (ss_tot_mp)
+                r_squared_ep = 1 - (ss_res_ep) / (ss_tot_ep)
                 r_squared = 1 - (ss_res_ep + ss_res_mp) / (ss_tot_ep +
                                                            ss_tot_mp)
 
                 n = dd.shape[0]
-                k = models.loc[models['name'] == modname,
-                               'n_params'].unique()[0]
+                k = models.loc[models['name'] ==
+                               modname, 'n_params'].unique()[0]
                 bic = compute_bic(r_squared, n, k)
 
                 drec['group'].append(grp)
                 drec['subject'].append(sub)
-                drec['model'].append(modname)
+                drec['model'].append(i)
                 drec['params'].append(p)
-                drec['x_pred_ep'].append(y)
-                drec['x_pred_mp'].append(yff)
                 drec['x_obs_ep'].append(x_obs_ep)
                 drec['x_obs_mp'].append(x_obs_mp)
                 drec['sig_mp'].append(sig_mp)
@@ -564,74 +370,65 @@ def compute_pbic(x):
     return pbic
 
 
-def report_fit_summary_boot(models, d):
-
-    dd = prepare_fit_summary_boot(models, d)
-
-    dd['pbic'] = dd.groupby(['group'])['bic'].transform(compute_pbic)
-
-    dd['pbic_max'] = dd.groupby(
-        ['group'])['pbic'].transform(lambda x: np.max(x.to_numpy()))
-
-    fit_summary = dd.loc[dd['pbic'] == dd['pbic_max']].groupby(
-        ['group', 'model'])
-    fit_summary = dd.groupby(['group', 'model'])
-
-    print()
-    print(fit_summary['pbic', 'r_squared', 'r_squared_mp',
-                      'r_squared_ep'].mean())
-    print()
-    print(fit_summary['model'].count())
-
-
 def report_fit_summary(models, d):
 
     d = prepare_fit_summary(models, d)
-
-    def comp_traj(x):
-        x_obs_mp = x['x_obs_mp'].mean()
-        x_obs_ep = x['x_obs_ep'].mean()
-        y = x['y'].mean()
-        yff = x['yff'].mean()
-        p = np.vstack(x['params'].to_numpy())
-        grp = x['group'].unique()[0]
-        model = x['model'].unique()[0]
-        r_squared_mp = np.round(x['r_squared_mp'].mean(), 2)
-        r_squared_ep = np.round(x['r_squared_ep'].mean(), 2)
-        subject = x['subject'].to_numpy()[0]
-        sig_mp = x['sig_mp'].mean()
-        sig_ep = x['sig_ep'].mean()
-
-        fig, ax = plt.subplots(2, 2, squeeze=False, figsize=(10, 10))
-        x = np.arange(0, x_obs_mp.shape[0], 1)
-        # ax[0, 0].scatter(x=x[1:], y=x_obs_mp[1:], c=sig_ep[:-1])
-        ax[0, 0].plot(x_obs_mp)
-        ax[0, 0].plot(yff)
-        ax[0, 1].plot(x_obs_ep)
-        ax[0, 1].plot(y)
-        ax[1, 0].violinplot(p[:, 8:12], np.arange(0, 4, 1))
-        ax[1, 1].violinplot(p[:, 5:8], np.arange(0, 3, 1))
-        ax[0, 1].set_title('group ' + str(grp) + ', model ' + str(model) +
-                           '\n' + str(r_squared_mp) + '\n' + str(r_squared_ep))
-        plt.savefig('../figures/fit_summary_grp_' + str(grp) + '_mod_' +
-                    str(model) + '_subject_' + str(subject) + '.pdf')
-        plt.close()
-
-    # d.groupby(['group', 'subject', 'model']).apply(comp_traj).reset_index()
-    d.groupby(['group', 'model']).apply(comp_traj).reset_index()
 
     d['pbic'] = d.groupby(['group', 'subject'])['bic'].transform(compute_pbic)
 
     d['pbic_max'] = d.groupby(
         ['group', 'subject'])['pbic'].transform(lambda x: np.max(x.to_numpy()))
 
-    fit_summary = d.loc[d['pbic'] == d['pbic_max']].groupby(['group', 'model'])
+    xlabel = np.array([
+        'all', 'no ff', 'no fb', 'no fb int', 'only ff', 'only fb',
+        'only fb int', 'none'
+    ])
+
+    d['model'] = xlabel[d['model'].to_numpy()]
+
+    d['best_model'] = d.groupby([
+        'group', 'subject'
+    ])['pbic'].transform(lambda x: xlabel[np.argmax(x.to_numpy())])
+
+    # note: summarise model selection results
+    fit_summary = d.loc[d['model'] == d['best_model']].groupby(
+        ['group', 'best_model'])
 
     print()
-    print(fit_summary['pbic', 'r_squared', 'r_squared_mp',
-                      'r_squared_ep'].mean())
+    print(fit_summary['pbic', 'r_squared'].mean())
     print()
-    print(fit_summary['model'].count())
+    print(fit_summary['best_model'].count())
+
+    # # note: report parameter estimate stats
+    # xlabel = np.array([
+    #     'all', 'no ff', 'no fb', 'no fb int', 'only ff', 'only fb',
+    #     'only fb int', 'none'
+    # ])
+
+    # pname = np.array([
+    #     'alpha_ff', 'beta_ff', 'alpha_fb', 'beta_fb', 'w', 'gamma_ff',
+    #     'gamma_fb', 'gamma_fbint', 'xfb_init', 'sse'
+    # ])
+
+    # for g, grp in enumerate(d['group'].unique()):
+
+    #     print('\n')
+    #     print('group ' + str(grp))
+
+    #     params = d.loc[d['model'] == 'all', ['group', 'subject', 'params']]
+    #     params = np.vstack(
+    #         params.loc[(params['group'] == grp), 'params'].to_numpy())
+
+    #     tstat, pval = ttest_1samp(params, popmean=0, axis=0)
+    #     cd = np.mean(params, axis=0) / np.std(params, axis=0, ddof=1)
+
+    #     inds = [4, 5, 6, 7, 9]
+    #     for j in inds:
+    #         print(pname[j] + ' = ' + str(np.round(params[:, j].mean(), 2)) +
+    #               ': t(' + str(params.shape[0] - 1) + ') = ' +
+    #               str(np.round(tstat[j], 2)) + ', p = ' +
+    #               str(np.round(pval[j], 2)) + ', d = ' +
+    #               str(np.round(cd[j], 2)))
 
 
 def get_slopes(x):
@@ -815,55 +612,72 @@ def plot_slopes_scatter(d):
     plt.show()
 
 
-def report_parameter_estimates(models, d):
+def inspect_fits_individual_model_compare(models, d):
 
-    dfs = prepare_fit_summary(models, d)
-    pname = np.array([
-        'alpha_ff', 'beta_ff', 'alpha_fb', 'beta_fb', 'xfb_init', 'w',
-        'gamma_ff_1', 'gamma_ff_2', 'gamma_ff_3', 'gamma_fbint_1',
-        'gamma_fbint_2', 'gamma_fbint_3', 'sse'
-    ])
-    n_params = pname.shape[0] - 1
-    nrows = 2
-    ncols = 2
-    # ncols = dfs['group'].unique().shape[0]
+    # note: report fit summary
+    report_fit_summary(models, d)
 
-    fig, ax = plt.subplots(nrows, ncols, squeeze=False)
-    ax = np.reshape(ax, (1, 4))
-    for g, grp in enumerate(dfs['group'].unique()):
+    # dd = d.groupby(['group', 'subject', 'sig_mp',
+    #                 'sig_ep']).apply(get_slopes).reset_index(drop=True)
 
-        params = dfs.loc[dfs['model'] == 'all', ['group', 'subject', 'params']]
-        params = np.vstack(params.loc[(params['group'] == grp),
-                                      'params'].to_numpy())
+    # dd.groupby(['group', 'process', 'sig_ep', 'sig_mp']).apply(report_slopes)
 
-        x = np.arange(1, params.shape[1], 1)
-        ax[0, g].plot([1, n_params], [0, 0], '--')
-        ax[0, g].violinplot(params[:, :-1])
-        ax[0, g].set_xticks(x)
-        ax[0, g].set_xticklabels(pname[:-1])
-        ax[0, g].set_title(str(grp))
-        for jj in range(params.shape[0]):
-            ax[0, g].plot(x, params[jj, :-1], '.', alpha=0.5)
+    # plot slopes scatter
+    # plot_slopes_scatter(d)
 
-        tstat, pval = ttest_1samp(params, popmean=0, axis=0)
-        cd = np.mean(params, axis=0) / np.std(params, axis=0, ddof=1)
+    # note: examine full model parameter estimation method
+    # n_params = 10
 
-        print('\n')
-        print('group ' + str(grp))
-        inds = np.arange(0, 11, 1)
-        for j in inds:
-            print(pname[j] + ' = ' + str(np.round(params[:, j].mean(), 2)) +
-                  ': t(' + str(params.shape[0] - 1) + ') = ' +
-                  str(np.round(tstat[j], 2)) + ', p = ' +
-                  str(np.round(pval[j], 2)) + ', d = ' +
-                  str(np.round(cd[j], 2)))
+    # xlabel = np.array([
+    #     'all', 'no ff', 'no fb', 'no fb int', 'only ff', 'only fb',
+    #     'only fb int', 'none'
+    # ])
 
-    plt.tight_layout()
-    plt.show()
+    # pname = np.array([
+    #     'alpha_ff', 'beta_ff', 'alpha_fb', 'beta_fb', 'w', 'gamma_ff',
+    #     'gamma_fb', 'gamma_fbint', 'xfb_init', 'sse'
+    # ])
+
+    # n_models = len(xlabel)
+
+    # # nrows = 1
+    # # ncols = d_fit_summary['group'].unique().shape[0]
+
+    # fig, ax = plt.subplots(nrows, ncols, squeeze=False)
+    # for g, grp in enumerate(d_fit_summary['group'].unique()):
+
+    #     params = d_fit_summary.loc[d_fit_summary['model'] ==
+    #                                'all', ['group', 'subject', 'params']]
+    #     params = np.vstack(
+    #         params.loc[(params['group'] == grp), 'params'].to_numpy())
+
+    #     x = np.arange(1, params.shape[1], 1)
+    #     ax[0, g].plot([1, n_params], [0, 0], '--')
+    #     ax[0, g].violinplot(params[:, :-1])
+    #     # ax[0, g].set_xticks(x, pname[:-1])
+    #     # ax[0, g].set_title(grp)
+    #     for jj in range(params.shape[0]):
+    #         ax[0, g].plot(x, params[jj, :-1], '.', alpha=0.5)
+
+    #     tstat, pval = ttest_1samp(params, popmean=0, axis=0)
+    #     cd = np.mean(params, axis=0) / np.std(params, axis=0, ddof=1)
+
+    #     print('\n')
+    #     print('group ' + str(grp))
+    #     inds = [4, 5, 6, 7, 9]
+    #     for j in inds:
+    #         print(pname[j] + ' = ' + str(np.round(params[:, j].mean(), 2)) +
+    #               ': t(' + str(params.shape[0] - 1) + ') = ' +
+    #               str(np.round(tstat[j], 2)) + ', p = ' +
+    #               str(np.round(pval[j], 2)) + ', d = ' +
+    #               str(np.round(cd[j], 2)))
+
+    # # plt.tight_layout()
+    # # plt.show()
 
     # # todo: for each best fit model, plot mean observed vs mean predicted
-    # for g, grp in enumerate(dfs['group'].unique()):
-    #     d_grp = dfs.loc[dfs['group'] == grp]
+    # for g, grp in enumerate(d_fit_summary['group'].unique()):
+    #     d_grp = d_fit_summary.loc[d_fit_summary['group'] == grp]
     #     grp_subs = d_grp['subject'].unique()
     #     nrow = 2
     #     ncol = grp_subs.size
@@ -882,7 +696,7 @@ def report_parameter_estimates(models, d):
     #         ax[1, s].plot(y, '.c1')
     #     plt.show()
 
-    # s2 = dfs.loc[dfs['model'] == dfs['best_model'],
+    # s2 = d_fit_summary.loc[d_fit_summary['model'] == d_fit_summary['best_model'],
     #               ['group', 'best_model', 'x_obs_ep', 'x_obs_mp', 'y', 'yff']]
 
     # s2 = s2.melt(id_vars=['group', 'best_model'],
@@ -923,7 +737,7 @@ def inspect_fits_boot(group):
     d = load_all_data()
 
 
-def fit_individual(credit, d, fit_args, froot):
+def fit_individual(d, fit_args, froot):
 
     obj_func = fit_args['obj_func']
     bounds = fit_args['bounds']
@@ -952,7 +766,7 @@ def fit_individual(credit, d, fit_args, froot):
             x_obs_mp = dd['ha_init'].to_numpy()
             x_obs_ep = dd['ha_end'].to_numpy()
 
-            args = (rot, sig_mp, sig_ep, x_obs_mp, x_obs_ep, group, credit)
+            args = (rot, sig_mp, sig_ep, x_obs_mp, x_obs_ep, group)
 
             results = differential_evolution(func=obj_func,
                                              bounds=bounds,
@@ -974,57 +788,14 @@ def fit_individual(credit, d, fit_args, froot):
                 np.savetxt(f, tmp.T, '%0.4f', delimiter=',', newline='\n')
 
 
-def fit_boot(credit, d, fit_args, froot):
+def fit_boot(group, bounds, maxiter, polish, n_boot_samp):
 
-    n_boot_samp = 0
+    d = load_all_data()
 
-    obj_func = fit_args['obj_func']
-    bounds = fit_args['bounds']
-    maxiter = fit_args['maxiter']
-    disp = fit_args['disp']
-    tol = fit_args['tol']
-    polish = fit_args['polish']
-    updating = fit_args['updating']
-    workers = fit_args['workers']
-    popsize = fit_args['popsize']
-    mutation = fit_args['mutation']
-    recombination = fit_args['recombination']
-
-    for grp in d['group'].unique():
+    for grp in group:
 
         dd = d[d['group'] == grp]
-
-        ddd = dd.groupby('trial_abs').mean().reset_index()
-        ddd = ddd.sort_values('trial_abs')
-
-        rot = ddd.rot.to_numpy()
-        sig_mp = ddd.sig_mp.to_numpy().astype(int)
-        sig_ep = ddd.sig_ep.to_numpy().astype(int)
-        group = ddd.group.to_numpy().astype(int)
-        x_obs_mp = ddd['ha_init'].to_numpy()
-        # x_obs_mp = ddd['ha_mid'].to_numpy()
-        x_obs_ep = ddd['ha_end'].to_numpy()
-
-        args = (rot, sig_mp, sig_ep, x_obs_mp, x_obs_ep, group, credit)
-
-        results = differential_evolution(func=obj_func,
-                                         bounds=bounds,
-                                         args=args,
-                                         disp=disp,
-                                         maxiter=maxiter,
-                                         popsize=popsize,
-                                         mutation=mutation,
-                                         recombination=recombination,
-                                         tol=tol,
-                                         polish=polish,
-                                         updating=updating,
-                                         workers=workers)
-
-        fout = froot + '_group_' + str(grp) + '_grp.txt'
-        with open(fout, 'w') as f:
-            tmp = np.concatenate((results['x'], [results['fun']]))
-            tmp = np.reshape(tmp, (tmp.shape[0], 1))
-            np.savetxt(f, tmp.T, '%0.4f', delimiter=',', newline='\n')
+        dd.sort_to_numpy()('trial_abs', inplace=True)
 
         for n in range(n_boot_samp):
 
@@ -1036,38 +807,33 @@ def fit_boot(credit, d, fit_args, froot):
             for i in range(boot_subs.shape[0]):
 
                 ddd.append(dd[dd['subject'] == boot_subs[i]][[
-                    'rot', 'ha_init', 'ha_end', 'trial_abs', 'group', 'sig_mp',
-                    'sig_ep'
+                    'rot', 'sig_mp', 'ha_init', 'ha_end', 'trial_abs', 'group'
                 ]])
 
             ddd = pd.concat(ddd)
             ddd = ddd.groupby('trial_abs').mean().reset_index()
-            ddd = ddd.sort_values('trial_abs')
+            ddd.sort_to_numpy()('trial_abs', inplace=True)
 
             rot = ddd.rot.to_numpy()
-            sig_mp = ddd.sig_mp.to_numpy().astype(int)
-            sig_ep = ddd.sig_ep.to_numpy().astype(int)
-            group = ddd.group.to_numpy().astype(int)
+            sig_mp = ddd.sig_mp.to_numpy()
+            group = ddd.group.to_numpy()
             x_obs_mp = ddd['ha_init'].to_numpy()
             x_obs_ep = ddd['ha_end'].to_numpy()
 
-            args = (rot, sig_mp, sig_ep, x_obs_mp, x_obs_ep, group, credit)
+            args = (rot, sig_mp, x_obs_mp, x_obs_ep, group)
 
             results = differential_evolution(func=obj_func,
                                              bounds=bounds,
                                              args=args,
-                                             disp=disp,
+                                             disp=True,
                                              maxiter=maxiter,
-                                             popsize=popsize,
-                                             mutation=mutation,
-                                             recombination=recombination,
-                                             tol=tol,
-                                             polish=polish,
-                                             updating=updating,
-                                             workers=workers)
+                                             tol=1e-15,
+                                             polish=p,
+                                             updating='deferred',
+                                             workers=-1)
 
-            fout = froot + '_group_' + str(grp) + '_boot.txt'
-            with open(fout, 'a') as f:
+            fname = '...fits/fit_' + str(grp) + '_boot.txt'
+            with open(fname, 'a') as f:
                 tmp = np.concatenate((results['x'], [results['fun']]))
                 tmp = np.reshape(tmp, (tmp.shape[0], 1))
                 np.savetxt(f, tmp.T, '%0.4f', delimiter=',', newline='\n')
@@ -1083,9 +849,8 @@ def obj_func(params, *args):
     x_obs_mp = obs[3]
     x_obs_ep = obs[4]
     group = obs[5]
-    credit = obs[6]
 
-    args = (rot, sig_mp, sig_ep, group, credit)
+    args = (rot, sig_mp, sig_ep, group)
 
     x_pred = simulate(params, args)
     x_pred_mp = x_pred[1]
@@ -1105,28 +870,16 @@ def simulate(params, args):
     beta_ff = params[1]
     alpha_fb = params[2]
     beta_fb = params[3]
-    xfb_init = params[4]
-
-    gamma_fbint_1 = params[5]
-    gamma_fbint_2 = params[6]
-    gamma_fbint_3 = params[7]
-    gamma_fbint_4 = params[8]
-    gamma_fbint = np.array([gamma_fbint_1, gamma_fbint_2, gamma_fbint_3, gamma_fbint_4])
-
-    gamma_ff_1 = params[9]
-    gamma_ff_2 = params[10]
-    gamma_ff_3 = params[11]
-    gamma_ff_4 = params[12]
-    gamma_ff = np.array([gamma_ff_1, gamma_ff_2, gamma_ff_3, gamma_ff_4])
-
-    alpha_ff2 = params[13]
-    beta_ff2 = params[14]
+    w = params[4]
+    gamma_ff = params[5]
+    gamma_fb = params[6]
+    gamma_fbint = params[7]
+    xfb_init = params[8]
 
     r = args[0]
     sig_mp = args[1]
     sig_ep = args[2]
     group = args[3]
-    credit = args[4]
 
     n_trials = r.shape[0]
 
@@ -1138,48 +891,48 @@ def simulate(params, args):
     yfb = np.zeros(n_trials)
     y = np.zeros(n_trials)
 
-    xff2 = np.zeros(n_trials)
-
     xfb[0] = xfb_init
+
+    wmp = w
+    wep = 1 - w
 
     for i in range(n_trials - 1):
 
-        ff_adapt_mp = 0.0
-        ff_adapt_ep = 0.0
-        ff_adapt_mp2 = 0.0
-        ff_adapt_ep2 = 0.0
+        bayes_mod_ff = 0.0
+        bayes_mod_fb = 0.0
+        bayes_mod_fbint = 0.0
 
         # start to midpoint
-        yff[i] = xff[i] + xff2[i]
+        yff[i] = xff[i]
         yfb[i] = 0.0
         y[i] = yff[i] + yfb[i]
 
         if sig_mp[i] != 4:
+            bayes_mod_fbint = bayes_int(sig_mp[i], gamma_fbint)
             delta_mp[i] = 0.0 - (y[i] + r[i])
-            yfb[i] = xfb[i] * delta_mp[i] * gamma_fbint[sig_mp[i] - 1]
-            ff_adapt_mp = alpha_ff * delta_mp[i]
-            ff_adapt_mp2 = alpha_ff2 * delta_mp[i]
+            yfb[i] = xfb[i] * delta_mp[i] * bayes_mod_fbint
+            ff_adapt_mp = wmp * alpha_ff * np.tanh((gamma_ff / sig_mp[i]) * delta_mp[i])
         else:
             delta_mp[i] = 0.0
-            yfb[i] = gamma_fbint[sig_mp[i] - 1]
+            yfb[i] = 0.0
+            ff_adapt_mp = 0.0
 
         # midpoint to endpoint
         y[i] = yff[i] + yfb[i]
 
         if sig_ep[i] != 4:
+            bayes_mod_fb = bayes_int(sig_mp[i], gamma_fb)
             delta_ep[i] = 0.0 - (y[i] + r[i])
-            ff_adapt_ep = alpha_ff * (delta_ep[i] - yfb[i])
-            ff_adapt_ep2 = alpha_ff2 * (delta_ep[i] - yfb[i])
+            ff_adapt_ep = wep * alpha_ff * np.tanh((gamma_ff / sig_ep[i]) * delta_ep[i])
+            fb_adapt = alpha_fb * delta_ep[i] * bayes_mod_fb
         else:
+            bayes_mod_fb = 0.0
             delta_ep[i] = 0.0
+            ff_adapt_ep = 0.0
+            fb_adapt = 0.0
 
-        # update fb state
-        xfb[i + 1] = beta_fb * xfb[i] + alpha_fb * delta_ep[i]
-
-        # update ff state
-        # beta_ff * xff[i] + ff_adapt_mp + ff_adapt_ep
         xff[i + 1] = beta_ff * xff[i] + ff_adapt_mp + ff_adapt_ep
-        xff2[i + 1] = gamma_ff[sig_mp[i] - 1]
+        xfb[i + 1] = beta_fb * xfb[i] + fb_adapt
 
         # clip the feedback gain to prevent instability
         xfb = np.clip(xfb, -2, 2)
