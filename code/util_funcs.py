@@ -3,46 +3,10 @@ from imports import *
 
 def define_models():
 
-    m = pd.DataFrame({
-        'name': 'all',
-        'credit': 'simple',
-        'n_params': 11,
-        'bid': ('lb', 'ub'),
-        'alpha_ff': (0, 1),
-        'beta_ff': (0, 1),
-        'alpha_fb': (0, 1),
-        'beta_fb': (0, 1),
-        'xfb_init': (-2, 2),
-        'gamma_ff_1': (0, 100),
-        'gamma_ff_2': (0, 100),
-        'gamma_ff_3': (0, 100),
-        'gamma_fbint_1': (0, 1),
-        'gamma_fbint_2': (0, 1),
-        'gamma_fbint_3': (0, 1)
-    })
-
     m1 = pd.DataFrame({
-        'name': 'all_simple',
-        'credit': 'simple',
-        'n_params': 11,
-        'bid': ('lb', 'ub'),
-        'alpha_ff': (0, 1),
-        'beta_ff': (0, 1),
-        'alpha_fb': (0, 1),
-        'beta_fb': (0, 1),
-        'xfb_init': (-2, 2),
-        'gamma_ff_1': (0, 100),
-        'gamma_ff_2': (0, 100),
-        'gamma_ff_3': (0, 100),
-        'gamma_fbint_1': (0, 1),
-        'gamma_fbint_2': (0, 1),
-        'gamma_fbint_3': (0, 1)
-    })
-
-    m2 = pd.DataFrame({
-        'name': 'all_smart',
+        'name': 'add',
         'credit': 'smart',
-        'n_params': 13,
+        'n_params': 15,
         'bid': ('lb', 'ub'),
         'alpha_ff': (0, 1),
         'beta_ff': (0, 1),
@@ -61,8 +25,29 @@ def define_models():
         'beta_ff2': (0, 1),
     })
 
-    # b = pd.concat((m1, m2))
-    b = m2
+    m2 = pd.DataFrame({
+        'name': 'multiply',
+        'credit': 'smart',
+        'n_params': 15,
+        'bid': ('lb', 'ub'),
+        'alpha_ff': (0, 1),
+        'beta_ff': (0, 1),
+        'alpha_fb': (0, 1),
+        'beta_fb': (0, 1),
+        'xfb_init': (-2, 2),
+        'gamma_fbint_1': (0, 1),
+        'gamma_fbint_2': (0, 1),
+        'gamma_fbint_3': (0, 1),
+        'gamma_fbint_4': (0, 1),
+        'gamma_ff_1': (0, 1),
+        'gamma_ff_2': (0, 1),
+        'gamma_ff_3': (0, 1),
+        'gamma_ff_4': (0, 1),
+        'alpha_ff2': (0, 1),
+        'beta_ff2': (0, 1),
+    })
+
+    b = pd.concat((m1, m2))
 
     return b
 
@@ -98,11 +83,11 @@ def fit_models(models, dd):
             'tol': 1e-3,
             'polish': False,
             'updating': 'deferred',
-            'workers': 1
+            'workers': -1
         }
 
         froot = '../fits/fit_' + modname
-        fit_individual(credit, dd, fit_args, froot)
+        fit_individual(modname, dd, fit_args, froot)
         # fit_boot(credit, dd, fit_args, froot)
 
 
@@ -502,7 +487,7 @@ def prepare_fit_summary(models, d):
                 sig_mp = dd['sig_mp'].to_numpy()
                 sig_ep = dd['sig_ep'].to_numpy()
                 group = dd['group'].to_numpy()
-                args = (rot, sig_mp, sig_ep, group, credit)
+                args = (rot, sig_mp, sig_ep, group, modname)
 
                 fname = '../fits/fit_' + modname + '_group_' + str(
                     grp) + '_sub_' + str(sub) + '.txt'
@@ -602,17 +587,32 @@ def report_fit_summary(models, d):
         sig_mp = x['sig_mp'].mean()
         sig_ep = x['sig_ep'].mean()
 
+        ss_tot_mp = np.nansum((x_obs_mp - np.nanmean(x_obs_mp))**2)
+        ss_reg_mp = np.nansum((yff - np.nanmean(x_obs_mp))**2)
+        ss_res_mp = np.nansum((x_obs_mp - yff)**2)
+        ss_tot_ep = np.nansum((x_obs_ep - np.nanmean(x_obs_ep))**2)
+        ss_reg_ep = np.nansum((y - np.nanmean(x_obs_ep))**2)
+        ss_res_ep = np.nansum((x_obs_ep - y)**2)
+
+        r_squared_mp_mean = 1 - ss_res_mp / ss_tot_mp
+        r_squared_ep_mean = 1 - ss_res_ep / ss_tot_ep
+        r_squared_mean = 1 - (ss_res_ep + ss_res_mp) / (ss_tot_ep + ss_tot_mp)
+
+        r_squared_mp_mean = np.round(r_squared_mp_mean, 2)
+        r_squared_ep_mean = np.round(r_squared_ep_mean, 2)
+        r_squared_mean = np.round(r_squared_mean, 2)
+
         fig, ax = plt.subplots(2, 2, squeeze=False, figsize=(10, 10))
         x = np.arange(0, x_obs_mp.shape[0], 1)
-        # ax[0, 0].scatter(x=x[1:], y=x_obs_mp[1:], c=sig_ep[:-1])
         ax[0, 0].plot(x_obs_mp)
         ax[0, 0].plot(yff)
         ax[0, 1].plot(x_obs_ep)
         ax[0, 1].plot(y)
-        ax[1, 0].violinplot(p[:, 8:12], np.arange(0, 4, 1))
-        ax[1, 1].violinplot(p[:, 5:8], np.arange(0, 3, 1))
-        ax[0, 1].set_title('group ' + str(grp) + ', model ' + str(model) +
-                           '\n' + str(r_squared_mp) + '\n' + str(r_squared_ep))
+        ax[1, 0].violinplot(p[:, 9:13], np.arange(0, 4, 1))
+        ax[1, 1].violinplot(p[:, 5:9], np.arange(0, 4, 1))
+        ax[0,
+           1].set_title('group ' + str(grp) + ', model ' + str(model) + '\n' +
+                        str(r_squared_mp_mean) + '\n' + str(r_squared_ep_mean))
         plt.savefig('../figures/fit_summary_grp_' + str(grp) + '_mod_' +
                     str(model) + '_subject_' + str(subject) + '.pdf')
         plt.close()
@@ -923,7 +923,7 @@ def inspect_fits_boot(group):
     d = load_all_data()
 
 
-def fit_individual(credit, d, fit_args, froot):
+def fit_individual(modname, d, fit_args, froot):
 
     obj_func = fit_args['obj_func']
     bounds = fit_args['bounds']
@@ -952,7 +952,7 @@ def fit_individual(credit, d, fit_args, froot):
             x_obs_mp = dd['ha_init'].to_numpy()
             x_obs_ep = dd['ha_end'].to_numpy()
 
-            args = (rot, sig_mp, sig_ep, x_obs_mp, x_obs_ep, group, credit)
+            args = (rot, sig_mp, sig_ep, x_obs_mp, x_obs_ep, group, modname)
 
             results = differential_evolution(func=obj_func,
                                              bounds=bounds,
@@ -1083,9 +1083,9 @@ def obj_func(params, *args):
     x_obs_mp = obs[3]
     x_obs_ep = obs[4]
     group = obs[5]
-    credit = obs[6]
+    modname = obs[6]
 
-    args = (rot, sig_mp, sig_ep, group, credit)
+    args = (rot, sig_mp, sig_ep, group, modname)
 
     x_pred = simulate(params, args)
     x_pred_mp = x_pred[1]
@@ -1111,7 +1111,8 @@ def simulate(params, args):
     gamma_fbint_2 = params[6]
     gamma_fbint_3 = params[7]
     gamma_fbint_4 = params[8]
-    gamma_fbint = np.array([gamma_fbint_1, gamma_fbint_2, gamma_fbint_3, gamma_fbint_4])
+    gamma_fbint = np.array(
+        [gamma_fbint_1, gamma_fbint_2, gamma_fbint_3, gamma_fbint_4])
 
     gamma_ff_1 = params[9]
     gamma_ff_2 = params[10]
@@ -1126,7 +1127,7 @@ def simulate(params, args):
     sig_mp = args[1]
     sig_ep = args[2]
     group = args[3]
-    credit = args[4]
+    modname = args[4]
 
     n_trials = r.shape[0]
 
@@ -1177,9 +1178,15 @@ def simulate(params, args):
         xfb[i + 1] = beta_fb * xfb[i] + alpha_fb * delta_ep[i]
 
         # update ff state
-        # beta_ff * xff[i] + ff_adapt_mp + ff_adapt_ep
-        xff[i + 1] = beta_ff * xff[i] + ff_adapt_mp + ff_adapt_ep
-        xff2[i + 1] = gamma_ff[sig_mp[i] - 1]
+        if modname == 'add':
+            xff[i + 1] = beta_ff * xff[i] + ff_adapt_mp + ff_adapt_ep
+            xff2[i + 1] = beta_ff2 * xff2[
+                i] + ff_adapt_mp2 + ff_adapt_ep2 + gamma_ff[
+                    sig_mp[i] - 1] + gamma_ff[sig_ep[i] - 1]
+        elif modname == 'multiply':
+            xff[i + 1] = beta_ff * xff[i] + ff_adapt_mp + ff_adapt_ep
+            xff2[i + 1] = beta_ff2 * xff2[i] + ff_adapt_mp2 * gamma_ff[
+                sig_mp[i] - 1] + ff_adapt_ep2 * gamma_ff[sig_ep[i] - 1]
 
         # clip the feedback gain to prevent instability
         xfb = np.clip(xfb, -2, 2)
