@@ -3,6 +3,28 @@ from imports import *
 
 def define_models():
 
+    m0 = pd.DataFrame({
+        'name': 'forget',
+        'credit': 'smart',
+        'n_params': 15,
+        'bid': ('lb', 'ub'),
+        'alpha_ff': (0, 1),
+        'beta_ff': (0, 1),
+        'alpha_fb': (0, 1),
+        'beta_fb': (0, 1),
+        'xfb_init': (-2, 2),
+        'gamma_fbint_1': (0, 1),
+        'gamma_fbint_2': (0, 1),
+        'gamma_fbint_3': (0, 1),
+        'gamma_fbint_4': (-2, 2),
+        'gamma_ff_1': (-20, 20),
+        'gamma_ff_2': (-20, 20),
+        'gamma_ff_3': (-20, 20),
+        'gamma_ff_4': (-20, 20),
+        'alpha_ff2': (0, 1),
+        'beta_ff2': (0, 1),
+    })
+
     m1 = pd.DataFrame({
         'name': 'add',
         'credit': 'smart',
@@ -16,11 +38,11 @@ def define_models():
         'gamma_fbint_1': (0, 1),
         'gamma_fbint_2': (0, 1),
         'gamma_fbint_3': (0, 1),
-        'gamma_fbint_4': (0, 1),
-        'gamma_ff_1': (-2, 2),
-        'gamma_ff_2': (-2, 2),
-        'gamma_ff_3': (-2, 2),
-        'gamma_ff_4': (-2, 2),
+        'gamma_fbint_4': (-2, 2),
+        'gamma_ff_1': (-20, 20),
+        'gamma_ff_2': (-20, 20),
+        'gamma_ff_3': (-20, 20),
+        'gamma_ff_4': (-20, 20),
         'alpha_ff2': (0, 1),
         'beta_ff2': (0, 1),
     })
@@ -38,7 +60,7 @@ def define_models():
         'gamma_fbint_1': (0, 1),
         'gamma_fbint_2': (0, 1),
         'gamma_fbint_3': (0, 1),
-        'gamma_fbint_4': (0, 1),
+        'gamma_fbint_4': (-2, 2),
         'gamma_ff_1': (0, 1),
         'gamma_ff_2': (0, 1),
         'gamma_ff_3': (0, 1),
@@ -47,7 +69,9 @@ def define_models():
         'beta_ff2': (0, 1),
     })
 
-    b = pd.concat((m1, m2))
+    # b = pd.concat((m0, m1))
+    # b = m0
+    b = m1
 
     return b
 
@@ -92,16 +116,22 @@ def fit_models(models, dd):
 
 
 def load_all_data():
-    d1 = pd.read_csv('../data/exp1_2020.csv')
-    d2 = pd.read_csv('../data/exp2_2020.csv')
-    d3 = pd.read_csv('../data/exp3_2020.csv')
-    d4 = pd.read_csv('../data/exp4_2020.csv')
-    d5 = pd.read_csv('../data/exp5_2020.csv')
-    d6 = pd.read_csv('../data/exp6_2020.csv')
-    d7 = pd.read_csv('../data/exp7_2020.csv')
-    d8 = pd.read_csv('../data/exp8_2020.csv')
+    # d1 = pd.read_csv('../data/exp1_2020.csv')
+    # d2 = pd.read_csv('../data/exp2_2020.csv')
+    # d3 = pd.read_csv('../data/exp3_2020.csv')
+    # d4 = pd.read_csv('../data/exp4_2020.csv')
+    # d5 = pd.read_csv('../data/exp5_2020.csv')
+    # d6 = pd.read_csv('../data/exp6_2020.csv')
+    # d7 = pd.read_csv('../data/exp7_2020.csv')
+    d8 = pd.read_csv('../data/exp8_2021.csv')
+    d345 = pd.read_csv('../data/exp345_2021.csv')
+    d15 = pd.read_csv('../data/G15.csv')
+    d15['HA_INIT'] = d15['HA_INT']
+    d15['HA_MID'] = d15['HA_INT']
+    d1718 = pd.read_csv('../data/G17_18.csv')
+    d1920 = pd.read_csv('../data/G19_G20.csv')
 
-    d = pd.concat((d1, d2, d3, d4, d5, d6, d7, d8), sort=False)
+    d = pd.concat((d8, d345, d15, d1718, d1920), sort=False)
 
     d.columns = d.columns.str.lower()
     d.phase = [x.lower() for x in d.phase.to_numpy()]
@@ -601,6 +631,21 @@ def report_fit_summary(models, d):
         r_squared_mp_mean = np.round(r_squared_mp_mean, 2)
         r_squared_ep_mean = np.round(r_squared_ep_mean, 2)
         r_squared_mean = np.round(r_squared_mean, 2)
+
+        fig, ax = plt.subplots(1, 1, squeeze=False, figsize=(6, 6))
+        x = np.arange(0, x_obs_mp.shape[0], 1)
+        x = x[1:]
+        xmp = x_obs_mp[1:]
+        sep = sig_ep[:-1]
+        ax[0, 0].plot(x, xmp, 'k', alpha=0.2)
+        ax[0, 0].scatter(x[sep == 1], xmp[sep == 1], c='C0', label='1')
+        ax[0, 0].scatter(x[sep == 2], xmp[sep == 2], c='C1', label='2')
+        ax[0, 0].scatter(x[sep == 3], xmp[sep == 3], c='C2', label='3')
+        ax[0, 0].scatter(x[sep == 4], xmp[sep == 4], c='C3', label='4')
+        plt.legend()
+        plt.savefig('../figures/fit_summary_grp_' + str(grp) + '_mod_' +
+                    str(model) + '_subject_' + str(subject) + '_scatter.pdf')
+        plt.close()
 
         fig, ax = plt.subplots(2, 2, squeeze=False, figsize=(10, 10))
         x = np.arange(0, x_obs_mp.shape[0], 1)
@@ -1177,16 +1222,40 @@ def simulate(params, args):
         # update fb state
         xfb[i + 1] = beta_fb * xfb[i] + alpha_fb * delta_ep[i]
 
+        # # sort out trial types for group 15
+        # if ( sig_mp[i] == 1 ) and ( sig_ep[i] == 1 ):
+        #     gam = 0
+        # if ( sig_mp[i] == 1 ) and ( sig_ep[i] == 3 ):
+        #     gam = 1
+        # if ( sig_mp[i] == 3 ) and ( sig_ep[i] == 1 ):
+        #     gam = 2
+        # if ( sig_mp[i] == 3 ) and ( sig_ep[i] == 3 ):
+        #     gam = 3
+
+        # # update ff state grp 15
+        # if modname == 'forget':
+        #     xff[i + 1] = beta_ff * xff[i] + ff_adapt_mp + ff_adapt_ep
+        #     xff2[i + 1] = gamma_ff[gam] * xff2[i] + ff_adapt_mp2 + ff_adapt_ep2 + beta_ff2
+        # elif modname == 'add':
+        #     xff[i + 1] = beta_ff * xff[i] + ff_adapt_mp + ff_adapt_ep
+        #     xff2[i + 1] = beta_ff2 * xff2[i] + ff_adapt_mp2 + ff_adapt_ep2 + gamma_ff[gam]
+        # elif modname == 'multiply':
+        #     xff[i + 1] = beta_ff * xff[i] + ff_adapt_mp + ff_adapt_ep
+        #     xff2[i + 1] = beta_ff2 * xff2[i] + ff_adapt_mp2 * gamma_ff[sig_mp[i] - 1] + ff_adapt_ep2 * gamma_ff[sig_ep[i] - 1]
+
+        if sig_ep[i] == 0:
+            sig_ep[i] = 4
+
         # update ff state
-        if modname == 'add':
+        if modname == 'forget':
             xff[i + 1] = beta_ff * xff[i] + ff_adapt_mp + ff_adapt_ep
-            xff2[i + 1] = beta_ff2 * xff2[
-                i] + ff_adapt_mp2 + ff_adapt_ep2 + gamma_ff[
-                    sig_mp[i] - 1] + gamma_ff[sig_ep[i] - 1]
+            xff2[i + 1] = (gamma_ff[sig_mp[i] - 1] + gamma_ff[sig_ep[i] - 1]) * xff2[i] + ff_adapt_mp2 + ff_adapt_ep2 + beta_ff2
+        elif modname == 'add':
+            xff[i + 1] = beta_ff * xff[i] + ff_adapt_mp + ff_adapt_ep
+            xff2[i + 1] = beta_ff2 * xff2[i] + ff_adapt_mp2 + ff_adapt_ep2 + gamma_ff[sig_mp[i] - 1] + gamma_ff[sig_ep[i] - 1]
         elif modname == 'multiply':
             xff[i + 1] = beta_ff * xff[i] + ff_adapt_mp + ff_adapt_ep
-            xff2[i + 1] = beta_ff2 * xff2[i] + ff_adapt_mp2 * gamma_ff[
-                sig_mp[i] - 1] + ff_adapt_ep2 * gamma_ff[sig_ep[i] - 1]
+            xff2[i + 1] = beta_ff2 * xff2[i] + ff_adapt_mp2 * gamma_ff[sig_mp[i] - 1] + ff_adapt_ep2 * gamma_ff[sig_ep[i] - 1]
 
         # clip the feedback gain to prevent instability
         xfb = np.clip(xfb, -2, 2)
