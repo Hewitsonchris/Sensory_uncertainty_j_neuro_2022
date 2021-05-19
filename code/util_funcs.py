@@ -45,6 +45,7 @@ def define_models():
         'gamma_ff_4': (-20, 20),
         'alpha_ff2': (0, 1),
         'beta_ff2': (0, 1),
+        # 'noise': (0, 1)
     })
 
     m2 = pd.DataFrame({
@@ -69,9 +70,10 @@ def define_models():
         'beta_ff2': (0, 1),
     })
 
-    # b = pd.concat((m0, m1))
+    # b = pd.concat((m0, m1, m2))
     # b = m0
     b = m1
+    # b = m2
 
     return b
 
@@ -116,7 +118,7 @@ def fit_models(models, dd):
 
 
 def load_all_data():
-    # d1 = pd.read_csv('../data/exp1_2020.csv')
+    d1 = pd.read_csv('../data/exp1_2020.csv')
     # d2 = pd.read_csv('../data/exp2_2020.csv')
     # d3 = pd.read_csv('../data/exp3_2020.csv')
     # d4 = pd.read_csv('../data/exp4_2020.csv')
@@ -126,12 +128,13 @@ def load_all_data():
     d8 = pd.read_csv('../data/exp8_2021.csv')
     d345 = pd.read_csv('../data/exp345_2021.csv')
     d15 = pd.read_csv('../data/G15.csv')
+    d16 = pd.read_csv('../data/G16.csv')
     d15['HA_INIT'] = d15['HA_INT']
     d15['HA_MID'] = d15['HA_INT']
     d1718 = pd.read_csv('../data/G17_18.csv')
-    d1920 = pd.read_csv('../data/G19_G20.csv')
+    d1920 = pd.read_csv('../data/G19_20.csv')
 
-    d = pd.concat((d8, d345, d15, d1718, d1920), sort=False)
+    d = pd.concat((d1, d8, d345, d15, d16, d1718, d1920), sort=False)
 
     d.columns = d.columns.str.lower()
     d.phase = [x.lower() for x in d.phase.to_numpy()]
@@ -544,8 +547,8 @@ def prepare_fit_summary(models, d):
                                                            ss_tot_mp)
 
                 n = dd.shape[0]
-                k = models.loc[models['name'] == modname,
-                               'n_params'].unique()[0]
+                k = models.loc[models['name'] ==
+                               modname, 'n_params'].unique()[0]
                 bic = compute_bic(r_squared, n, k)
 
                 drec['group'].append(grp)
@@ -593,8 +596,8 @@ def report_fit_summary_boot(models, d):
     fit_summary = dd.groupby(['group', 'model'])
 
     print()
-    print(fit_summary['pbic', 'r_squared', 'r_squared_mp',
-                      'r_squared_ep'].mean())
+    print(fit_summary['pbic', 'r_squared', 'r_squared_mp', 'r_squared_ep'].
+          mean())
     print()
     print(fit_summary['model'].count())
 
@@ -655,9 +658,14 @@ def report_fit_summary(models, d):
         ax[0, 1].plot(y)
         ax[1, 0].violinplot(p[:, 9:13], np.arange(0, 4, 1))
         ax[1, 1].violinplot(p[:, 5:9], np.arange(0, 4, 1))
-        ax[0,
-           1].set_title('group ' + str(grp) + ', model ' + str(model) + '\n' +
-                        str(r_squared_mp_mean) + '\n' + str(r_squared_ep_mean))
+        # for ii in range(p.shape[0]):
+        #     ax[1, 0].plot(np.arange(0, 4, 1), p[ii, 9:13], '.k', linewidth=0.5)
+        #     ax[1, 1].plot(np.arange(0, 4, 1), p[ii, 5:9], '.k', linewidth=0.5)
+        #     ax[1, 0].plot(np.arange(0, 4, 1), p[ii, 9:13], '--k', linewidth=0.5)
+        #     ax[1, 1].plot(np.arange(0, 4, 1), p[ii, 5:9], '--k', linewidth=0.5)
+        ax[0, 1].set_title('group ' + str(grp) + ', model ' + str(model) +
+                           '\n' + str(r_squared_mp_mean) + '\n' +
+                           str(r_squared_ep_mean))
         plt.savefig('../figures/fit_summary_grp_' + str(grp) + '_mod_' +
                     str(model) + '_subject_' + str(subject) + '.pdf')
         plt.close()
@@ -673,8 +681,19 @@ def report_fit_summary(models, d):
     fit_summary = d.loc[d['pbic'] == d['pbic_max']].groupby(['group', 'model'])
 
     print()
-    print(fit_summary['pbic', 'r_squared', 'r_squared_mp',
-                      'r_squared_ep'].mean())
+    print(fit_summary['pbic', 'r_squared', 'r_squared_mp', 'r_squared_ep'].
+          mean())
+    print()
+    print(fit_summary['model'].count())
+
+    d['bic_min'] = d.groupby(
+        ['group', 'subject'])['bic'].transform(lambda x: np.min(x.to_numpy()))
+
+    fit_summary = d.loc[d['bic'] == d['bic_min']].groupby(['group', 'model'])
+
+    print()
+    print(
+        fit_summary['bic', 'r_squared', 'r_squared_mp', 'r_squared_ep'].mean())
     print()
     print(fit_summary['model'].count())
 
@@ -878,8 +897,8 @@ def report_parameter_estimates(models, d):
     for g, grp in enumerate(dfs['group'].unique()):
 
         params = dfs.loc[dfs['model'] == 'all', ['group', 'subject', 'params']]
-        params = np.vstack(params.loc[(params['group'] == grp),
-                                      'params'].to_numpy())
+        params = np.vstack(
+            params.loc[(params['group'] == grp), 'params'].to_numpy())
 
         x = np.arange(1, params.shape[1], 1)
         ax[0, g].plot([1, n_params], [0, 0], '--')
@@ -1144,6 +1163,38 @@ def obj_func(params, *args):
     return sse
 
 
+def obj_func_nll(params, *args):
+
+    obs = args
+
+    rot = obs[0]
+    sig_mp = obs[1]
+    sig_ep = obs[2]
+    x_obs_mp = obs[3]
+    x_obs_ep = obs[4]
+    group = obs[5]
+    modname = obs[6]
+
+    args = (rot, sig_mp, sig_ep, group, modname)
+
+    x_pred = simulate(params, args)
+    x_pred_mp = x_pred[1]
+    x_pred_ep = x_pred[0]
+
+    # how likely are your data given the current parameters
+    l = norm.pdf(x_obs_mp, loc=x_pred_mp, scale=params[-1])
+    nll = -np.log(l)
+    nll_mp = np.sum(nll)
+
+    l = norm.pdf(x_obs_ep, loc=x_pred_ep, scale=params[-1])
+    nll = -np.log(l)
+    nll_ep = np.sum(nll)
+
+    nll = nll_mp + nll_ep
+
+    return nll
+
+
 def simulate(params, args):
 
     alpha_ff = params[0]
@@ -1249,13 +1300,17 @@ def simulate(params, args):
         # update ff state
         if modname == 'forget':
             xff[i + 1] = beta_ff * xff[i] + ff_adapt_mp + ff_adapt_ep
-            xff2[i + 1] = (gamma_ff[sig_mp[i] - 1] + gamma_ff[sig_ep[i] - 1]) * xff2[i] + ff_adapt_mp2 + ff_adapt_ep2 + beta_ff2
+            xff2[i + 1] = (gamma_ff[sig_mp[i] - 1] + gamma_ff[sig_ep[i] - 1]
+                           ) * xff2[i] + ff_adapt_mp2 + ff_adapt_ep2 + beta_ff2
         elif modname == 'add':
             xff[i + 1] = beta_ff * xff[i] + ff_adapt_mp + ff_adapt_ep
-            xff2[i + 1] = beta_ff2 * xff2[i] + ff_adapt_mp2 + ff_adapt_ep2 + gamma_ff[sig_mp[i] - 1] + gamma_ff[sig_ep[i] - 1]
+            xff2[i + 1] = beta_ff2 * xff2[
+                i] + ff_adapt_mp2 + ff_adapt_ep2 + gamma_ff[
+                    sig_mp[i] - 1] + gamma_ff[sig_ep[i] - 1]
         elif modname == 'multiply':
             xff[i + 1] = beta_ff * xff[i] + ff_adapt_mp + ff_adapt_ep
-            xff2[i + 1] = beta_ff2 * xff2[i] + ff_adapt_mp2 * gamma_ff[sig_mp[i] - 1] + ff_adapt_ep2 * gamma_ff[sig_ep[i] - 1]
+            xff2[i + 1] = beta_ff2 * xff2[i] + ff_adapt_mp2 * gamma_ff[
+                sig_mp[i] - 1] + ff_adapt_ep2 * gamma_ff[sig_ep[i] - 1]
 
         # clip the feedback gain to prevent instability
         xfb = np.clip(xfb, -2, 2)

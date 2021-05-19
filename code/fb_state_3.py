@@ -4,7 +4,8 @@ from util_funcs import *
 d = load_all_data()
 # inspect_behaviour_all(d)
 
-grp = [345]
+grp = [0, 14, 345, 16,  17,  18,  19,  20]
+# grp = [15, 16]
 
 dd = d.loc[np.isin(d['group'], grp)]
 dd = dd.loc[np.isin(dd['phase'], ['adaptation'])]
