@@ -70,9 +70,9 @@ def define_models():
         'beta_ff2': (0, 1),
     })
 
-    # b = pd.concat((m0, m1, m2))
+    b = pd.concat((m0, m1, m2))
     # b = m0
-    b = m1
+    # b = m1
     # b = m2
 
     return b
@@ -1273,7 +1273,7 @@ def simulate(params, args):
         # update fb state
         xfb[i + 1] = beta_fb * xfb[i] + alpha_fb * delta_ep[i]
 
-        # # sort out trial types for group 15
+        # # sort out trial types for group 15 / 16
         # if ( sig_mp[i] == 1 ) and ( sig_ep[i] == 1 ):
         #     gam = 0
         # if ( sig_mp[i] == 1 ) and ( sig_ep[i] == 3 ):
@@ -1283,7 +1283,7 @@ def simulate(params, args):
         # if ( sig_mp[i] == 3 ) and ( sig_ep[i] == 3 ):
         #     gam = 3
 
-        # # update ff state grp 15
+        # # update ff state grp 15 / 16
         # if modname == 'forget':
         #     xff[i + 1] = beta_ff * xff[i] + ff_adapt_mp + ff_adapt_ep
         #     xff2[i + 1] = gamma_ff[gam] * xff2[i] + ff_adapt_mp2 + ff_adapt_ep2 + beta_ff2
