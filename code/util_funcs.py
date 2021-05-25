@@ -1283,7 +1283,7 @@ def simulate(params, args):
         # if ( sig_mp[i] == 3 ) and ( sig_ep[i] == 3 ):
         #     gam = 3
 
-        # # update ff state grp 15 / 16
+        # # update ff state ( grp 15 / 16 )
         # if modname == 'forget':
         #     xff[i + 1] = beta_ff * xff[i] + ff_adapt_mp + ff_adapt_ep
         #     xff2[i + 1] = gamma_ff[gam] * xff2[i] + ff_adapt_mp2 + ff_adapt_ep2 + beta_ff2
@@ -1294,10 +1294,10 @@ def simulate(params, args):
         #     xff[i + 1] = beta_ff * xff[i] + ff_adapt_mp + ff_adapt_ep
         #     xff2[i + 1] = beta_ff2 * xff2[i] + ff_adapt_mp2 * gamma_ff[sig_mp[i] - 1] + ff_adapt_ep2 * gamma_ff[sig_ep[i] - 1]
 
-        if sig_ep[i] == 0:
-            sig_ep[i] = 4
+        # if sig_ep[i] == 0:
+        #     sig_ep[i] = 4
 
-        # update ff state
+        # update ff state ( all other groups )
         if modname == 'forget':
             xff[i + 1] = beta_ff * xff[i] + ff_adapt_mp + ff_adapt_ep
             xff2[i + 1] = (gamma_ff[sig_mp[i] - 1] + gamma_ff[sig_ep[i] - 1]

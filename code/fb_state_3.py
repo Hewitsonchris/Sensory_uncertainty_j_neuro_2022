@@ -36,7 +36,7 @@ dd.loc[dd['group'] == 5, 'group'] = 345
 # dd.loc[dd['group'] == 345].groupby(['group']).apply(check_sequence)
 
 models = define_models()
-fit_models(models, dd)
+# fit_models(models, dd)
 report_fit_summary(models, dd)
 # report_parameter_estimates(models, dd)
 # inspect_behaviour(dd)
