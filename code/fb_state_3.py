@@ -6,8 +6,8 @@ d = load_all_data()
 
 # grp = [0, 14, 345, 17,  18,  19,  20]
 # grp = [15, 16, 17, 18, 19, 20]
-# grp = [15, 19, 20]
-grp = [19]
+grp = [15, 19, 20]
+# grp = [19]
 
 dd = d.loc[np.isin(d['group'], grp)]
 # dd = dd.loc[np.isin(dd['phase'], ['adaptation'])]

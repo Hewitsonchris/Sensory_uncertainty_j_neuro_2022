@@ -63,8 +63,8 @@ def define_models():
     m22['bias_ff'] = (0, 0)
     m22['n_params'] = 15
 
-    b = pd.concat((m00, m11, m22, m0, m1, m2))
-    # b = pd.concat((m0, m1, m2))
+    # b = pd.concat((m00, m11, m22, m0, m1, m2))
+    b = pd.concat((m0, m1, m2))
 
     return b
 
@@ -623,246 +623,328 @@ def report_fit_summary_boot(models, d):
     print(fit_summary['model'].count())
 
 
+def comp_traj(x):
+    x_obs_mp = x['x_obs_mp'].mean()
+    x_obs_ep = x['x_obs_ep'].mean()
+    y = x['y'].mean()
+    yff = x['yff'].mean()
+    xff = x['xff'].mean()
+    xff2 = x['xff2'].mean()
+    p = np.vstack(x['params'].to_numpy())
+    grp = x['group'].unique()[0]
+    model = x['model'].unique()[0]
+    r_squared_mp = np.round(x['r_squared_mp'].mean(), 2)
+    r_squared_ep = np.round(x['r_squared_ep'].mean(), 2)
+    subject = x['subject'].to_numpy()[0]
+    sig_mp = x['sig_mp'].mean()
+    sig_ep = x['sig_ep'].mean()
+
+    ss_tot_mp = np.nansum((x_obs_mp - np.nanmean(x_obs_mp))**2)
+    ss_reg_mp = np.nansum((yff - np.nanmean(x_obs_mp))**2)
+    ss_res_mp = np.nansum((x_obs_mp - yff)**2)
+    ss_tot_ep = np.nansum((x_obs_ep - np.nanmean(x_obs_ep))**2)
+    ss_reg_ep = np.nansum((y - np.nanmean(x_obs_ep))**2)
+    ss_res_ep = np.nansum((x_obs_ep - y)**2)
+
+    r_squared_mp_mean = 1 - ss_res_mp / ss_tot_mp
+    r_squared_ep_mean = 1 - ss_res_ep / ss_tot_ep
+    r_squared_mean = 1 - (ss_res_ep + ss_res_mp) / (ss_tot_ep + ss_tot_mp)
+
+    r_squared_mp_mean = np.round(r_squared_mp_mean, 2)
+    r_squared_ep_mean = np.round(r_squared_ep_mean, 2)
+    r_squared_mean = np.round(r_squared_mean, 2)
+
+    return {
+        'x_obs_mp': x_obs_mp,
+        'x_obs_ep': x_obs_ep,
+        'y': y,
+        'yff': yff,
+        'xff': xff,
+        'xff2': xff2,
+        'p': p,
+        'grp': grp,
+        'model': model,
+        'r_squared_mp': r_squared_mp,
+        'r_squared_ep': r_squared_ep,
+        'subject': subject,
+        'sig_mp': sig_mp,
+        'sig_ep': sig_ep,
+        'r_squared_mp_mean': r_squared_mp_mean,
+        'r_squared_ep_mean': r_squared_ep_mean,
+        'r_squared_mean': r_squared_mean,
+    }
+
+
+def fig_grp_scatter(x):
+
+    x = comp_traj(x)
+
+    x_obs_mp = x['x_obs_mp']
+    x_obs_ep = x['x_obs_ep']
+    y = x['y']
+    yff = x['yff']
+    xff = x['xff']
+    xff2 = x['xff2']
+    p = x['p']
+    grp = x['grp']
+    model = x['model']
+    r_squared_mp = x['r_squared_mp']
+    r_squared_ep = x['r_squared_ep']
+    subject = x['subject']
+    sig_mp = x['sig_mp']
+    sig_ep = x['sig_ep']
+    r_squared_mp_mean = x['r_squared_mp_mean']
+    r_squared_ep_mean = x['r_squared_ep_mean']
+    r_squared_mean = x['r_squared_mean']
+
+    fig, ax = plt.subplots(1, 1, squeeze=False, figsize=(14, 6))
+    x = np.arange(0, x_obs_mp.shape[0], 1)
+    x = x[1:]
+    xmp = x_obs_mp[1:]
+    sep = sig_ep[:-1]
+    smp = sig_mp[:-1]
+    ax[0, 0].plot(x, xmp, 'k', alpha=0.2)
+
+    if grp == 15 or grp == 16:
+        ax[0, 0].scatter(x[(smp == 1) & (sep == 1)],
+                         xmp[(smp == 1) & (sep == 1)],
+                         c='C0',
+                         label='1')
+        ax[0, 0].scatter(x[(smp == 1) & (sep == 3)],
+                         xmp[(smp == 1) & (sep == 3)],
+                         c='C1',
+                         label='2')
+        ax[0, 0].scatter(x[(smp == 3) & (sep == 1)],
+                         xmp[(smp == 3) & (sep == 1)],
+                         c='C2',
+                         label='3')
+        ax[0, 0].scatter(x[(smp == 3) & (sep == 3)],
+                         xmp[(smp == 3) & (sep == 3)],
+                         c='C3',
+                         label='4')
+
+    else:
+        ax[0, 0].scatter(x[sep == 1], xmp[sep == 1], c='C0', label='1')
+        ax[0, 0].scatter(x[sep == 2], xmp[sep == 2], c='C1', label='2')
+        ax[0, 0].scatter(x[sep == 3], xmp[sep == 3], c='C2', label='3')
+        ax[0, 0].scatter(x[sep == 4], xmp[sep == 4], c='C3', label='4')
+
+    plt.legend()
+    plt.savefig('../figures/fit_summary_grp_' + str(grp) + '_scatter.pdf')
+    plt.close()
+
+
+def fig_summary_1(x):
+
+    x = comp_traj(x)
+
+    x_obs_mp = x['x_obs_mp']
+    x_obs_ep = x['x_obs_ep']
+    y = x['y']
+    yff = x['yff']
+    xff = x['xff']
+    xff2 = x['xff2']
+    p = x['p']
+    grp = x['grp']
+    model = x['model']
+    r_squared_mp = x['r_squared_mp']
+    r_squared_ep = x['r_squared_ep']
+    subject = x['subject']
+    sig_mp = x['sig_mp']
+    sig_ep = x['sig_ep']
+    r_squared_mp_mean = x['r_squared_mp_mean']
+    r_squared_ep_mean = x['r_squared_ep_mean']
+    r_squared_mean = x['r_squared_mean']
+
+    p_names = [
+        'alpha_ff_1', 'beta_ff_1', 'bias_ff_1', 'alpha_ff_2', 'beta_ff_2',
+        'bias_ff_2', 'alpha_fb', 'beta_fb', 'fb_init', 'gamma_fb_1',
+        'gamma_fb_2', 'gamma_fb_3', 'gamma_fb_4', 'gamma_ff_1', 'gamma_ff_2',
+        'gamma_ff_3', 'gamma_ff_4', 'temporal_discount'
+    ]
+    dfp = pd.DataFrame(data=p[:, :-1])
+    dfp.columns = p_names
+    dfp = dfp[[
+        'alpha_ff_1', 'alpha_ff_2', 'beta_ff_1', 'beta_ff_2', 'bias_ff_1',
+        'bias_ff_2', 'alpha_fb', 'beta_fb', 'fb_init', 'gamma_fb_1',
+        'gamma_fb_2', 'gamma_fb_3', 'gamma_fb_4', 'gamma_ff_1', 'gamma_ff_2',
+        'gamma_ff_3', 'gamma_ff_4', 'temporal_discount'
+    ]]
+
+    # NOTE: Rescale parameters to (0, 1)
+    # dfp['bias_ff_1'] = dfp['bias_ff_1'] / 10
+    # dfp['bias_ff_2'] = dfp['bias_ff_2'] / 10
+    # dfp['gamma_fb_4'] = dfp['gamma_fb_4'] / 1
+
+    dfp = dfp.drop(columns=['alpha_fb', 'beta_fb', 'fb_init'])
+    dfp = dfp.melt()
+    dfp['subject'] = dfp.groupby(
+        ['variable']).transform(lambda x: np.arange(0, x.shape[0], 1))
+    dfp['var_color'] = 'C0'
+
+    fig = plt.figure(figsize=(20, 10))
+    gs = fig.add_gridspec(3, 8)
+
+    ax1 = fig.add_subplot(gs[0, :4])
+    ax2 = fig.add_subplot(gs[0, 4:])
+    x = np.arange(0, x_obs_mp.shape[0], 1)
+    ax1.plot(x_obs_mp, label='Human')
+    ax1.plot(yff, label='Model Full Output')
+    ax1.plot(xff, label='Model State slow')
+    ax1.plot(xff2, label='Model State fast')
+    ax2.plot(x_obs_ep)
+    ax2.plot(y)
+
+    if grp == 15 or grp == 16:
+        ax3 = fig.add_subplot(gs[1, :4])
+        d = dfp.loc[np.isin(dfp['variable'], ['gamma_ff_1', 'gamma_ff_3'])]
+    else:
+        ax3 = fig.add_subplot(gs[1, :4])
+        d = dfp.loc[np.isin(dfp['variable'],
+                            ['gamma_ff_1', 'gamma_ff_2', 'gamma_ff_3'])]
+
+    pg.plot_paired(data=d,
+                   dv='value',
+                   within='variable',
+                   subject='subject',
+                   boxplot_in_front=True,
+                   ax=ax3)
+
+    if grp == 15 or grp == 16:
+        ax4 = fig.add_subplot(gs[1, 4:])
+        d = dfp.loc[np.isin(dfp['variable'], ['gamma_fb_1', 'gamma_fb_3'])]
+    else:
+        ax4 = fig.add_subplot(gs[1, 4:])
+        d = dfp.loc[np.isin(dfp['variable'],
+                            ['gamma_fb_1', 'gamma_fb_2', 'gamma_fb_3'])]
+
+    pg.plot_paired(data=d,
+                   dv='value',
+                   within='variable',
+                   subject='subject',
+                   boxplot_in_front=True,
+                   ax=ax4)
+
+    ax5 = fig.add_subplot(gs[2, :2])
+    d = dfp.loc[np.isin(dfp['variable'], ['alpha_ff_1', 'alpha_ff_2'])]
+    pg.plot_paired(data=d,
+                   dv='value',
+                   within='variable',
+                   subject='subject',
+                   boxplot_in_front=True,
+                   ax=ax5)
+    ax6 = fig.add_subplot(gs[2, 2:4])
+    d = dfp.loc[np.isin(dfp['variable'], ['beta_ff_1', 'beta_ff_2'])]
+    pg.plot_paired(data=d,
+                   dv='value',
+                   within='variable',
+                   subject='subject',
+                   boxplot_in_front=True,
+                   ax=ax6)
+
+    ax7 = fig.add_subplot(gs[2, 7])
+    d = dfp.loc[np.isin(dfp['variable'], ['bias_ff_2'])]
+    pg.plot_paired(data=d,
+                   dv='value',
+                   within='variable',
+                   subject='subject',
+                   boxplot_in_front=True,
+                   pointplot_kwargs={'scale': 0.0},
+                   colors=['black', 'black', 'black'],
+                   ax=ax7)
+
+    ax8 = fig.add_subplot(gs[2, 6])
+    d = dfp.loc[np.isin(dfp['variable'], ['temporal_discount'])]
+    pg.plot_paired(data=d,
+                   dv='value',
+                   within='variable',
+                   subject='subject',
+                   boxplot_in_front=True,
+                   ax=ax8)
+
+    ax33 = fig.add_subplot(gs[2, 4])
+    d33 = dfp.loc[np.isin(dfp['variable'], ['gamma_ff_4'])]
+    pg.plot_paired(data=d33,
+                   dv='value',
+                   within='variable',
+                   subject='subject',
+                   boxplot_in_front=True,
+                   ax=ax33)
+
+    ax44 = fig.add_subplot(gs[2, 5])
+    d44 = dfp.loc[np.isin(dfp['variable'], ['gamma_fb_4'])]
+    pg.plot_paired(data=d44,
+                   dv='value',
+                   within='variable',
+                   subject='subject',
+                   boxplot_in_front=True,
+                   ax=ax44)
+
+    ax1.legend()
+    # plt.xticks(rotation=45)
+    ax1.set_title('group ' + str(grp) + ', model ' + str(model) + '\n' +
+                  str(r_squared_mp_mean))
+    ax2.set_title('group ' + str(grp) + ', model ' + str(model) + '\n' +
+                  str(r_squared_ep_mean))
+    plt.tight_layout()
+    plt.savefig('../figures/fit_summary_grp_' + str(grp) + '_mod_' +
+                str(model) + '_subject_' + str(subject) + '.pdf')
+    plt.close()
+
+
+def fig_summary_2(x):
+    pass
+
+
+def plot_bic(x):
+    grp = x['group'].unique()
+    fig = plt.figure(figsize=(20, 10))
+    gs = fig.add_gridspec(1, 1)
+    ax = fig.add_subplot(gs[0, 0])
+    pg.plot_paired(data=x,
+                   dv='bic',
+                   within='model',
+                   subject='subject',
+                   boxplot_in_front=True,
+                   ax=ax)
+    plt.savefig('../figures/fit_summary_bic_grp_' + str(grp) + '.pdf')
+    plt.close()
+    tres = pg.pairwise_ttests(data=x,
+                              dv='bic',
+                              within='model',
+                              subject='subject',
+                              padjust='bonf',
+                              effsize='cohen',
+                              return_desc=True)
+    print(tres[['A', 'B', 'T', 'dof', 'p-corr', 'cohen']])
+    print(tres['mean(A)'] - tres['mean(B)'])
+
+
 def report_fit_summary(models, d):
 
     d = prepare_fit_summary(models, d)
 
-    def comp_traj(x):
-        x_obs_mp = x['x_obs_mp'].mean()
-        x_obs_ep = x['x_obs_ep'].mean()
-        y = x['y'].mean()
-        yff = x['yff'].mean()
-        xff = x['xff'].mean()
-        xff2 = x['xff2'].mean()
-        p = np.vstack(x['params'].to_numpy())
-        grp = x['group'].unique()[0]
-        model = x['model'].unique()[0]
-        r_squared_mp = np.round(x['r_squared_mp'].mean(), 2)
-        r_squared_ep = np.round(x['r_squared_ep'].mean(), 2)
-        subject = x['subject'].to_numpy()[0]
-        sig_mp = x['sig_mp'].mean()
-        sig_ep = x['sig_ep'].mean()
-
-        ss_tot_mp = np.nansum((x_obs_mp - np.nanmean(x_obs_mp))**2)
-        ss_reg_mp = np.nansum((yff - np.nanmean(x_obs_mp))**2)
-        ss_res_mp = np.nansum((x_obs_mp - yff)**2)
-        ss_tot_ep = np.nansum((x_obs_ep - np.nanmean(x_obs_ep))**2)
-        ss_reg_ep = np.nansum((y - np.nanmean(x_obs_ep))**2)
-        ss_res_ep = np.nansum((x_obs_ep - y)**2)
-
-        r_squared_mp_mean = 1 - ss_res_mp / ss_tot_mp
-        r_squared_ep_mean = 1 - ss_res_ep / ss_tot_ep
-        r_squared_mean = 1 - (ss_res_ep + ss_res_mp) / (ss_tot_ep + ss_tot_mp)
-
-        r_squared_mp_mean = np.round(r_squared_mp_mean, 2)
-        r_squared_ep_mean = np.round(r_squared_ep_mean, 2)
-        r_squared_mean = np.round(r_squared_mean, 2)
-
-        fig, ax = plt.subplots(1, 1, squeeze=False, figsize=(14, 6))
-        x = np.arange(0, x_obs_mp.shape[0], 1)
-        x = x[1:]
-        xmp = x_obs_mp[1:]
-        sep = sig_ep[:-1]
-        smp = sig_mp[:-1]
-        ax[0, 0].plot(x, xmp, 'k', alpha=0.2)
-
-        if grp == 15 or grp == 16:
-            ax[0, 0].scatter(x[(smp == 1) & (sep == 1)],
-                             xmp[(smp == 1) & (sep == 1)],
-                             c='C0',
-                             label='1')
-            ax[0, 0].scatter(x[(smp == 1) & (sep == 3)],
-                             xmp[(smp == 1) & (sep == 3)],
-                             c='C1',
-                             label='2')
-            ax[0, 0].scatter(x[(smp == 3) & (sep == 1)],
-                             xmp[(smp == 3) & (sep == 1)],
-                             c='C2',
-                             label='3')
-            ax[0, 0].scatter(x[(smp == 3) & (sep == 3)],
-                             xmp[(smp == 3) & (sep == 3)],
-                             c='C3',
-                             label='4')
-
-        else:
-            ax[0, 0].scatter(x[sep == 1], xmp[sep == 1], c='C0', label='1')
-            ax[0, 0].scatter(x[sep == 2], xmp[sep == 2], c='C1', label='2')
-            ax[0, 0].scatter(x[sep == 3], xmp[sep == 3], c='C2', label='3')
-            ax[0, 0].scatter(x[sep == 4], xmp[sep == 4], c='C3', label='4')
-
+    # TODO: Make new figure
+    for grp in d.group.unique():
+        d_grp = d.loc[d['group'] == grp]
+        fig, ax = plt.subplots(3, 1, squeeze=False)
+        for mod in d_grp.model.unique():
+            d_mod = d_grp.loc[d_grp['model'] == mod]
+            x_obs_mp = d_mod.x_obs_mp.mean()
+            sig_mp = d_mod.sig_mp.mean()
+            yff = d_mod.yff.mean()
+            t = np.arange(1, yff.shape[0] + 1)
+            ax[0, 0].plot(t, x_obs_mp, 'k', alpha=0.1)
+            ax[1, 0].plot(t, x_obs_mp, 'k', alpha=0.1)
+            ax[2, 0].plot(t, x_obs_mp, 'k', alpha=0.1)
+            ax[0, 0].scatter(t, x_obs_mp, c='k', alpha=0.5)
+            ax[1, 0].scatter(t, x_obs_mp, c=sig_mp, alpha=0.5)
+            ax[2, 0].scatter(t, yff, label=mod, alpha=0.5)
         plt.legend()
-        plt.savefig('../figures/fit_summary_grp_' + str(grp) + '_scatter.pdf')
-        plt.close()
+        plt.show()
 
-        print()
-        print(xmp[sep == 1].mean())
-        print(xmp[sep == 2].mean())
-        print(xmp[sep == 3].mean())
-        print(xmp[sep == 4].mean())
-        print()
-
-        p_names = [
-            'alpha_ff_1', 'beta_ff_1', 'bias_ff_1', 'alpha_ff_2', 'beta_ff_2',
-            'bias_ff_2', 'alpha_fb', 'beta_fb', 'fb_init', 'gamma_fb_1',
-            'gamma_fb_2', 'gamma_fb_3', 'gamma_fb_4', 'gamma_ff_1',
-            'gamma_ff_2', 'gamma_ff_3', 'gamma_ff_4', 'temporal_discount'
-        ]
-        dfp = pd.DataFrame(data=p[:, :-1])
-        dfp.columns = p_names
-        dfp = dfp[[
-            'alpha_ff_1', 'alpha_ff_2', 'beta_ff_1', 'beta_ff_2', 'bias_ff_1',
-            'bias_ff_2', 'alpha_fb', 'beta_fb', 'fb_init', 'gamma_fb_1',
-            'gamma_fb_2', 'gamma_fb_3', 'gamma_fb_4', 'gamma_ff_1',
-            'gamma_ff_2', 'gamma_ff_3', 'gamma_ff_4', 'temporal_discount'
-        ]]
-
-        # NOTE: Rescale parameters to (0, 1)
-        # dfp['bias_ff_1'] = dfp['bias_ff_1'] / 10
-        # dfp['bias_ff_2'] = dfp['bias_ff_2'] / 10
-        # dfp['gamma_fb_4'] = dfp['gamma_fb_4'] / 1
-
-        dfp = dfp.drop(columns=['alpha_fb', 'beta_fb', 'fb_init'])
-        dfp = dfp.melt()
-        dfp['subject'] = dfp.groupby(
-            ['variable']).transform(lambda x: np.arange(0, x.shape[0], 1))
-        dfp['var_color'] = 'C0'
-
-        fig = plt.figure(figsize=(20, 10))
-        gs = fig.add_gridspec(3, 8)
-
-        ax1 = fig.add_subplot(gs[0, :4])
-        ax2 = fig.add_subplot(gs[0, 4:])
-        x = np.arange(0, x_obs_mp.shape[0], 1)
-        ax1.plot(x_obs_mp, label='Human')
-        ax1.plot(yff, label='Model Full Output')
-        ax1.plot(xff, label='Model State slow')
-        ax1.plot(xff2, label='Model State fast')
-        ax2.plot(x_obs_ep)
-        ax2.plot(y)
-
-        if grp == 15 or grp == 16:
-            ax3 = fig.add_subplot(gs[1, :4])
-            d = dfp.loc[np.isin(dfp['variable'], ['gamma_ff_1', 'gamma_ff_3'])]
-        else:
-            ax3 = fig.add_subplot(gs[1, :4])
-            d = dfp.loc[np.isin(dfp['variable'],
-                                ['gamma_ff_1', 'gamma_ff_2', 'gamma_ff_3'])]
-
-        pg.plot_paired(data=d,
-                       dv='value',
-                       within='variable',
-                       subject='subject',
-                       boxplot_in_front=True,
-                       ax=ax3)
-
-        if grp == 15 or grp == 16:
-            ax4 = fig.add_subplot(gs[1, 4:])
-            d = dfp.loc[np.isin(dfp['variable'], ['gamma_fb_1', 'gamma_fb_3'])]
-        else:
-            ax4 = fig.add_subplot(gs[1, 4:])
-            d = dfp.loc[np.isin(dfp['variable'],
-                                ['gamma_fb_1', 'gamma_fb_2', 'gamma_fb_3'])]
-
-        pg.plot_paired(data=d,
-                       dv='value',
-                       within='variable',
-                       subject='subject',
-                       boxplot_in_front=True,
-                       ax=ax4)
-
-        ax5 = fig.add_subplot(gs[2, :2])
-        d = dfp.loc[np.isin(dfp['variable'], ['alpha_ff_1', 'alpha_ff_2'])]
-        pg.plot_paired(data=d,
-                       dv='value',
-                       within='variable',
-                       subject='subject',
-                       boxplot_in_front=True,
-                       ax=ax5)
-        ax6 = fig.add_subplot(gs[2, 2:4])
-        d = dfp.loc[np.isin(dfp['variable'], ['beta_ff_1', 'beta_ff_2'])]
-        pg.plot_paired(data=d,
-                       dv='value',
-                       within='variable',
-                       subject='subject',
-                       boxplot_in_front=True,
-                       ax=ax6)
-
-        ax7 = fig.add_subplot(gs[2, 7])
-        d = dfp.loc[np.isin(dfp['variable'], ['bias_ff_2'])]
-        pg.plot_paired(data=d,
-                       dv='value',
-                       within='variable',
-                       subject='subject',
-                       boxplot_in_front=True,
-                       pointplot_kwargs={'scale': 0.0},
-                       colors=['black', 'black', 'black'],
-                       ax=ax7)
-
-        ax8 = fig.add_subplot(gs[2, 6])
-        d = dfp.loc[np.isin(dfp['variable'], ['temporal_discount'])]
-        pg.plot_paired(data=d,
-                       dv='value',
-                       within='variable',
-                       subject='subject',
-                       boxplot_in_front=True,
-                       ax=ax8)
-
-        ax33 = fig.add_subplot(gs[2, 4])
-        d33 = dfp.loc[np.isin(dfp['variable'], ['gamma_ff_4'])]
-        pg.plot_paired(data=d33,
-                       dv='value',
-                       within='variable',
-                       subject='subject',
-                       boxplot_in_front=True,
-                       ax=ax33)
-
-        ax44 = fig.add_subplot(gs[2, 5])
-        d44 = dfp.loc[np.isin(dfp['variable'], ['gamma_fb_4'])]
-        pg.plot_paired(data=d44,
-                       dv='value',
-                       within='variable',
-                       subject='subject',
-                       boxplot_in_front=True,
-                       ax=ax44)
-
-        ax1.legend()
-        # plt.xticks(rotation=45)
-        ax1.set_title('group ' + str(grp) + ', model ' + str(model) + '\n' +
-                      str(r_squared_mp_mean))
-        ax2.set_title('group ' + str(grp) + ', model ' + str(model) + '\n' +
-                      str(r_squared_ep_mean))
-        plt.tight_layout()
-        plt.savefig('../figures/fit_summary_grp_' + str(grp) + '_mod_' +
-                    str(model) + '_subject_' + str(subject) + '.pdf')
-        plt.close()
-
-    # d.groupby(['group', 'subject', 'model']).apply(comp_traj).reset_index()
-    d.groupby(['group', 'model']).apply(comp_traj).reset_index()
-
-    def plot_bic(x):
-        grp = x['group'].unique()
-        fig = plt.figure(figsize=(20, 10))
-        gs = fig.add_gridspec(1, 1)
-        ax = fig.add_subplot(gs[0, 0])
-        pg.plot_paired(data=x,
-                       dv='bic',
-                       within='model',
-                       subject='subject',
-                       boxplot_in_front=True,
-                       ax=ax)
-        plt.savefig('../figures/fit_summary_bic_grp_' + str(grp) + '.pdf')
-        plt.close()
-        tres = pg.pairwise_ttests(data=x,
-                                  dv='bic',
-                                  within='model',
-                                  subject='subject',
-                                  padjust='bonf',
-                                  effsize='cohen',
-                                  return_desc=True)
-        print(tres[['A', 'B', 'T', 'dof', 'p-corr', 'cohen']])
-        print(tres['mean(A)'] - tres['mean(B)'])
-
-    d.groupby(['group']).apply(plot_bic)
+    # d.groupby(['group', 'model']).apply(comp_traj).reset_index()
+    # d.groupby(['group']).apply(plot_bic)
 
     d['pbic'] = d.groupby(['group', 'subject'])['bic'].transform(compute_pbic)
 
