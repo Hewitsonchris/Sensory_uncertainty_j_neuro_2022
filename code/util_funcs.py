@@ -63,8 +63,7 @@ def define_models():
     m22['bias_ff'] = (0, 0)
     m22['n_params'] = 15
 
-    # b = pd.concat((m00, m11, m22, m0, m1, m2))
-    b = pd.concat((m0, m1, m2))
+    b = pd.concat((m00, m11, m22, m0, m1, m2))
 
     return b
 
@@ -141,19 +140,20 @@ def load_all_data():
     # d7 = pd.read_csv('../data/exp7_2020.csv')
     # d8 = pd.read_csv('../data/exp8_2021.csv')
     # d345 = pd.read_csv('../data/exp345_2021.csv')
-    d15 = pd.read_csv('../data/G15.csv')
+    d15 = pd.read_csv('../data/G15.csv')          # group 15: unimodal stochastic (n=20, low uncertainty, high uncertainty [2x2], exp1 2022 paper 1)
     d16 = pd.read_csv('../data/G16.csv')
-    d15['HA_INIT'] = d15['HA_INT']
+    d15['HA_INIT'] = d15['HA_INT']     
     d15['HA_MID'] = d15['HA_INT']
-    d1718 = pd.read_csv('../data/G17_18.csv')
-    d1920 = pd.read_csv('../data/G19_20.csv')
+    d1718 = pd.read_csv('../data/G17_18.csv') 
+    d1920 = pd.read_csv('../data/G19_20.csv')     # group 19: unimodal stochastic (n=20, low uncertainty, medium uncertainty, high uncertainty, no-fb, 'Midpoint only' exp2 2022 paper 1)
+                                                  # group 20: unimodal stochastic (n=20, low uncertainty, medium uncertainty, high uncertainty, no-fb, 'Midpoint plus enpoint incongruent' exp3 2022 paper 1)
+    
 
-    # d = pd.concat((d1, d8, d345, d15, d16, d1718, d1920), sort=False)
+
     d = pd.concat((d15, d16, d1718, d1920), sort=False)
 
     d.columns = d.columns.str.lower()
     d.phase = [x.lower() for x in d.phase.to_numpy()]
-    # d = d.loc[d['phase'] == 'adaptation']
 
     return d
 
@@ -176,8 +176,6 @@ def inspect_behaviour(d):
 
         fig, ax = plt.subplots(2, 2, squeeze=False)
 
-        # sns.scatterplot(data=dd, x='trial', y='ha_mid', ax=ax[0, 0])
-        # sns.scatterplot(data=dd, x='trial', y='ha_end', ax=ax[0, 0])
 
         sns.violinplot(x='sig_mp',
                        y='delta_ha_mid',
@@ -295,6 +293,9 @@ def inspect_behaviour_all(d):
     # group 10: bimodal predictable (n=20, groups 9 and10 + no fb wash
     # group 11: bimodal stochastic (n=12, groups 11 and 12) + no fb wash
     # group 12: bimodal stochastic (n=12, groups 11 and 12) + no fb wash
+    # group 15: unimodal stochastic (n=20, low uncertainty, high uncertainty [2x2], exp1 2022 paper 1)
+    # group 19: unimodal stochastic (n=20, low uncertainty, medium uncertainty, high uncertainty, no-fb, 'Midpoint only' exp2 2022 paper 1)
+    # group 20: unimodal stochastic (n=20, low uncertainty, medium uncertainty, high uncertainty, no-fb, 'Midpoint plus enpoint incongruent' exp3 2022 paper 1)
 
     fig = plt.figure(figsize=(10, 5))
     gs = fig.add_gridspec(3, 5)
@@ -410,7 +411,6 @@ def prepare_fit_summary_boot(models, d):
             credit = models.loc[(models['name'] == modname), 'credit'][0]
 
             x_obs_mp = d_grp['ha_init'].to_numpy()
-            # x_obs_mp = d_grp['ha_mid'].to_numpy()
             x_obs_ep = d_grp['ha_end'].to_numpy()
             rot = d_grp['rot'].to_numpy()
             sig_mp = d_grp['sig_mp'].to_numpy().astype(np.int)
@@ -881,7 +881,6 @@ def fig_summary_1(x):
                    ax=ax44)
 
     ax1.legend()
-    # plt.xticks(rotation=45)
     ax1.set_title('group ' + str(grp) + ', model ' + str(model) + '\n' +
                   str(r_squared_mp_mean))
     ax2.set_title('group ' + str(grp) + ', model ' + str(model) + '\n' +
@@ -943,8 +942,6 @@ def report_fit_summary(models, d):
         plt.legend()
         plt.show()
 
-    # d.groupby(['group', 'model']).apply(comp_traj).reset_index()
-    # d.groupby(['group']).apply(plot_bic)
 
     d['pbic'] = d.groupby(['group', 'subject'])['bic'].transform(compute_pbic)
 
